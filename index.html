@@ -1,0 +1,828 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+  body {
+    background: transparent !important;
+  }
+  .text-shadow {
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  .info-icon {
+    width: 30px;
+    text-align: center;
+  }
+  
+  .weather-icon {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .weather-icon-main {
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  
+  .heat-waves {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    animation: heatWave 2s ease-in-out infinite;
+  }
+  
+  .heat-waves.with-wind {
+    left: 1%;
+  }
+  
+  @keyframes heatWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.7; }
+    50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+  }
+  
+  .wind-waves {
+    position: absolute;
+    top: 25px;
+    left: 97%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    animation: windWave 1.5s ease-in-out infinite;
+  }
+  
+  .wind-waves.only-wind {
+    left: 50%;
+  }
+  
+  @keyframes windWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.8; }
+    50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+  }
+  
+  .icon-text-shadow {
+    color: white;
+    font-size: 1.3em;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  
+  .weather-row {
+    margin-top: -4.25px;
+  }
+  </style></head><body class="text-white">
+  
+  <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+      <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
+      <span id="place">Waiting for GPS…</span>
+    </div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
+      <span class="info-icon me-2">
+        <span id="weather-icon" class="weather-icon">
+          <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
+          <i id="heat-waves" class="fa-solid fa-water heat-waves" style="display: none;"></i>
+          <i id="wind-waves" class="fa-solid fa-wind wind-waves" style="display: none;"></i>
+        </span>
+      </span>
+      <span id="weather">--°C</span>
+    </div>
+  </div>
+
+  <script>
+  const placeEl = document.getElementById('place');
+  const weatherEl = document.getElementById('weather');
+  const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
+  
+  let lastKnownGPSLocation = null;
+  let gpsSuccessful = false;
+  let gpsAttempted = false;
+  let consecutiveGPSFailures = 0;
+  
+  // Detect if we're on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  function tick(){
+    const now = new Date();
+    const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    document.getElementById('time').textContent = `${dateString}, ${timeString}`;
+  }
+  tick(); setInterval(tick, 1000);
+  
+  async function reverseGeocode(lat, lon){
+    try {
+      // Use Google's reverse geocoding API for better English translations
+      const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_1|country`);
+      const data = await res.json();
+      
+      if (data.status === 'OK' && data.results.length > 0) {
+        const result = data.results[0];
+        const components = result.address_components;
+        
+        // Extract components in preferred order
+        let city = '';
+        let state = '';
+        let country = '';
+        let isJapan = false;
+        
+        components.forEach(component => {
+          const types = component.types;
+          const name = component.long_name;
+          
+          // Debug logging
+          console.log('Component:', name, 'Types:', types);
+          
+          // Check if location is in Japan
+          if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
+            isJapan = true;
+          }
+          
+          // Filter out specific district/dong names that are too detailed
+          const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || name.includes('(') || name.includes(')');
+          
+          if (types.includes('locality') && !isDetailedDistrict) {
+            console.log('Setting city to:', name);
+            city = name;
+          } else if (types.includes('administrative_area_level_1') && !isDetailedDistrict) {
+            console.log('Setting state to:', name);
+            state = name;
+          } else if (types.includes('country')) {
+            console.log('Setting country to:', name);
+            country = name;
+          }
+        });
+        
+        // Store Japan status globally for weather icon selection
+        window.isLocationInJapan = isJapan;
+        
+        // If we filtered out the city due to detailed district, try to find a better one
+        if (!city) {
+          components.forEach(component => {
+            const types = component.types;
+            const name = component.long_name;
+            
+            // Look for administrative_area_level_1 or other broader locality types
+            if (types.includes('administrative_area_level_1') && name !== state) {
+              city = name;
+            } else if (types.includes('locality') && !name.includes('-dong') && !name.includes('(')) {
+              city = name;
+            }
+          });
+        }
+        
+        // Smart redundancy removal
+        function areLocationsSimilar(loc1, loc2) {
+          if (!loc1 || !loc2) return false;
+          
+          // Exact match
+          if (loc1 === loc2) return true;
+          
+          // One contains the other (case insensitive)
+          const l1 = loc1.toLowerCase();
+          const l2 = loc2.toLowerCase();
+          if (l1.includes(l2) || l2.includes(l1)) return true;
+          
+          // Check for common administrative redundancy patterns
+          const adminPatterns = [
+            { shorter: l1, longer: l2 + ' region' },
+            { shorter: l1, longer: l2 + ' province' },
+            { shorter: l1, longer: l2 + ' state' },
+            { shorter: l1, longer: l2 + ' prefecture' },
+            { shorter: l1, longer: l2 + ' district' },
+            { shorter: l2, longer: l1 + ' region' },
+            { shorter: l2, longer: l1 + ' province' },
+            { shorter: l2, longer: l1 + ' state' },
+            { shorter: l2, longer: l1 + ' prefecture' },
+            { shorter: l2, longer: l1 + ' district' }
+          ];
+          
+          return adminPatterns.some(pattern => 
+            pattern.shorter === pattern.longer.replace(/\s+(region|province|state|prefecture|district)$/, '')
+          );
+        }
+        
+        // Remove redundant components
+        if (areLocationsSimilar(city, state)) {
+          console.log('Detected redundant city/state:', city, '/', state);
+          // Keep the more specific one (usually the shorter one, or the one without administrative terms)
+          if (city.length <= state.length && !city.toLowerCase().includes('region') && 
+              !city.toLowerCase().includes('province') && !city.toLowerCase().includes('state')) {
+            state = ''; // Keep city, remove state
+            console.log('Keeping city:', city, 'removing state');
+          } else {
+            city = ''; // Keep state as city, remove redundant city
+            console.log('Using state as city:', state);
+          }
+        }
+        
+        // If city is empty after redundancy check, use state as city
+        if (!city && state) {
+          city = state;
+          state = '';
+          console.log('Using state as city after redundancy check:', city);
+        }
+        
+        // Build address string, prioritizing the most specific location
+        const parts = [
+          city,
+          state,
+          country
+        ].filter(Boolean);
+        
+        console.log('Final location parts:', parts);
+        return parts.join(", ");
+      }
+      
+      // Safer fallback - extract only city, state, country from formatted address
+      if (data.results.length > 0) {
+        const formattedAddr = data.results[0].formatted_address;
+        const addressParts = formattedAddr.split(', ');
+        
+        // Try to extract only the broader location components (last 2-3 parts typically)
+        // Skip detailed addresses like street numbers, building names, etc.
+        const broadParts = addressParts.slice(-3).filter(part => {
+          // Filter out postal codes, detailed street addresses
+          return !part.match(/^\d+/) && // No leading numbers
+                 !part.includes('#') && // No building numbers
+                 !part.includes('Suite') && // No suite numbers
+                 !part.includes('Floor') && // No floor numbers
+                 part.length > 2; // Reasonable length
+        });
+        
+        // Additional redundancy check for formatted address parts
+        const filteredParts = [];
+        broadParts.forEach((part, index) => {
+          const isRedundant = filteredParts.some(existingPart => {
+            const p1 = part.toLowerCase();
+            const p2 = existingPart.toLowerCase();
+            return p1.includes(p2) || p2.includes(p1) || 
+                   p1.replace(/\s+(region|province|state|prefecture|district)$/, '') === p2 ||
+                   p2.replace(/\s+(region|province|state|prefecture|district)$/, '') === p1;
+          });
+          
+          if (!isRedundant) {
+            filteredParts.push(part);
+          }
+        });
+        
+        return filteredParts.join(", ");
+      }
+      
+      throw new Error('No results from Google Geocoding');
+      
+    } catch (error) {
+      console.warn('Google geocoding failed, falling back to Nominatim:', error);
+      
+      // Fallback to Nominatim with additional language parameters
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en&addressdetails=1&extratags=1`);
+      const geo = await res.json();
+      const addr = geo.address;
+      
+      console.log('Nominatim address components:', addr);
+      
+      // Check if Japan in Nominatim response
+      window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
+      
+      // Smart city name selection - avoid administrative names
+      let city = '';
+      let state = '';
+      let country = addr.country || '';
+      
+      // Prefer village/town over city if city contains administrative terms
+      if (addr.village && !addr.village.includes('Capital') && !addr.village.includes('City of')) {
+        city = addr.village;
+      } else if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
+        city = addr.town;
+      } else if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
+        city = addr.city;
+      } else if (addr.state && addr.state !== addr.city) {
+        // If city has administrative terms, use state as city if they're different
+        city = addr.state;
+        state = ''; // Don't duplicate
+      } else {
+        // Last resort - clean up the city name
+        city = (addr.city || addr.town || addr.village || '').replace(/^Capital City of /, '');
+      }
+      
+      // Only set state if it's different from city and doesn't contain administrative terms
+      if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
+        // Check for redundancy with Nominatim data too
+        const cityLower = city.toLowerCase();
+        const stateLower = addr.state.toLowerCase();
+        
+        const isRedundant = cityLower === stateLower ||
+                           cityLower.includes(stateLower) || 
+                           stateLower.includes(cityLower) ||
+                           cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district)$/, '') ||
+                           stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district)$/, '');
+        
+        if (!isRedundant) {
+          state = addr.state;
+        } else {
+          console.log('Detected Nominatim redundancy between city and state:', city, '/', addr.state);
+        }
+      }
+      
+      const parts = [city, state, country].filter(Boolean);
+      console.log('Nominatim final parts:', parts);
+      return parts.join(", ");
+    }
+  }
+  
+  // Google Weather condition mapping for Open-Meteo weather codes
+  const googleWeatherCodes = {
+    0: { condition: 'CLEAR', description: 'Clear' },
+    1: { condition: 'MOSTLY_CLEAR', description: 'Mostly Clear' },
+    2: { condition: 'PARTLY_CLOUDY', description: 'Partly Cloudy' },
+    3: { condition: 'MOSTLY_CLOUDY', description: 'Mostly Cloudy' },
+    45: { condition: 'FOG', description: 'Fog' },
+    48: { condition: 'FOG', description: 'Depositing Rime Fog' },
+    51: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Drizzle' },
+    53: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Moderate Drizzle' },
+    55: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Dense Drizzle' },
+    56: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Freezing Drizzle' },
+    57: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Dense Freezing Drizzle' },
+    61: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Rain' },
+    63: { condition: 'RAIN_SHOWERS', description: 'Moderate Rain' },
+    65: { condition: 'HEAVY_RAIN_SHOWERS', description: 'Heavy Rain' },
+    66: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Freezing Rain' },
+    67: { condition: 'HEAVY_RAIN_SHOWERS', description: 'Heavy Freezing Rain' },
+    71: { condition: 'LIGHT_SNOW', description: 'Light Snow' },
+    73: { condition: 'SNOW', description: 'Moderate Snow' },
+    75: { condition: 'HEAVY_SNOW', description: 'Heavy Snow' },
+    77: { condition: 'LIGHT_SNOW', description: 'Snow Grains' },
+    80: { condition: 'LIGHT_RAIN_SHOWERS', description: 'Light Rain Showers' },
+    81: { condition: 'RAIN_SHOWERS', description: 'Moderate Rain Showers' },
+    82: { condition: 'HEAVY_RAIN_SHOWERS', description: 'Heavy Rain Showers' },
+    85: { condition: 'LIGHT_SNOW_SHOWERS', description: 'Light Snow Showers' },
+    86: { condition: 'HEAVY_SNOW_SHOWERS', description: 'Heavy Snow Showers' },
+    95: { condition: 'THUNDERSTORM', description: 'Thunderstorm' },
+    96: { condition: 'THUNDERSTORM', description: 'Thunderstorm with Light Hail' },
+    99: { condition: 'THUNDERSTORM', description: 'Thunderstorm with Heavy Hail' }
+  };
+  
+  // Function to get Google weather icon URL based on weather code and time
+  function getGoogleWeatherIcon(weatherCode, isDay = true, condition = null) {
+    // Use passed condition or derive from weather code
+    const finalCondition = condition || googleWeatherCodes[weatherCode]?.condition || 'CLOUDY';
+    
+    // Repository base URL for v4 icons (now primary for everyone)
+    const repoBaseUrl = 'https://mrchallah.github.io/v4/';
+    const fallbackUrl = 'https://maps.gstatic.com/weather/v1/';
+    
+    // Standard Google Maps weather icon mapping for fallback
+    const standardIconMap = {
+      'CLEAR': isDay ? 'sunny.svg' : 'clear.svg',
+      'MOSTLY_CLEAR': isDay ? 'mostly_sunny.svg' : 'mostly_clear.svg',
+      'PARTLY_CLOUDY': isDay ? 'party_cloudy.svg' : 'partly_clear.svg',
+      'MOSTLY_CLOUDY': isDay ? 'cloudy.svg' : 'cloudy.svg',
+      'CLOUDY': 'cloudy.svg',
+      'FOG': 'fog.svg',
+      'LIGHT_RAIN_SHOWERS': 'drizzle.svg',
+      'RAIN_SHOWERS': 'showers.svg',
+      'HEAVY_RAIN_SHOWERS': 'heavy.svg',
+      'LIGHT_RAIN': 'drizzle.svg',
+      'RAIN': 'rain.svg',
+      'HEAVY_RAIN': 'heavy.svg',
+      'LIGHT_SNOW_SHOWERS': 'flurries.svg',
+      'SNOW_SHOWERS': 'snow_showers.svg',
+      'HEAVY_SNOW_SHOWERS': 'heavy_snow.svg',
+      'LIGHT_SNOW': 'flurries.svg',
+      'SNOW': 'snow_showers.svg',
+      'HEAVY_SNOW': 'heavy_snow.svg',
+      'SNOWSTORM': 'snow_showers.svg',
+      'SNOW_PERIODICALLY_HEAVY': 'heavy_snow.svg',
+      'HEAVY_SNOW_STORM': 'heavy_snow.svg',
+      'BLOWING_SNOW': 'blowing_snow.svg',
+      'RAIN_AND_SNOW': 'wintry_mix.svg',
+      'HAIL': 'sleet_hail.svg',
+      'HAIL_SHOWERS': 'wintry_mix.svg',
+      'THUNDERSTORM': 'strong_tstorms.svg',
+      'THUNDERSHOWER': 'strong_tstorms.svg',
+      'LIGHT_THUNDERSTORM_RAIN': 'strong_tstorms.svg',
+      'SCATTERED_THUNDERSTORMS': 'isolated_tstorms.svg',
+      'HEAVY_THUNDERSTORM': 'strong_tstorms.svg'
+    };
+    
+    // v4 repository weather icon mapping (now primary for everyone)
+    const v4IconMap = {
+      'CLEAR': isDay ? 'sunny_day.svg' : 'clear_night.svg',
+      'MOSTLY_CLEAR': isDay ? 'mostly_clear_day.svg' : 'mostly_clear_night.svg',
+      'PARTLY_CLOUDY': isDay ? 'partly_cloudy_day.svg' : 'partly_cloudy_night.svg',
+      'MOSTLY_CLOUDY': isDay ? 'mostly_cloudy_day.svg' : 'mostly_cloudy_night.svg',
+      'CLOUDY': 'cloudy.svg',
+      'FOG': 'haze_fog_dust_smoke.svg',
+      'LIGHT_RAIN_SHOWERS': 'drizzle.svg',
+      'RAIN_SHOWERS': isDay ? 'scattered_showers_day.svg' : 'scattered_showers_night.svg',
+      'HEAVY_RAIN_SHOWERS': 'showers_rain.svg',
+      'LIGHT_RAIN': isDay ? 'rain_with_cloudy_light.svg' : 'rain_with_cloudy_dark.svg',
+      'RAIN': isDay ? 'rain_with_cloudy_light.svg' : 'rain_with_cloudy_dark.svg',
+      'HEAVY_RAIN': 'heavy_rain.svg',
+      'LIGHT_SNOW_SHOWERS': isDay ? 'scattered_snow_showers_day.svg' : 'scattered_snow_showers_night.svg',
+      'SNOW_SHOWERS': 'showers_snow.svg',
+      'HEAVY_SNOW_SHOWERS': 'showers_snow.svg',
+      'LIGHT_SNOW': isDay ? 'snow_with_cloudy_light.svg' : 'snow_with_cloudy_dark.svg',
+      'SNOW': isDay ? 'snow_with_cloudy_light.svg' : 'snow_with_cloudy_dark.svg',
+      'HEAVY_SNOW': 'heavy_snow.svg',
+      'SNOWSTORM': 'heavy_snow.svg',
+      'SNOW_PERIODICALLY_HEAVY': 'heavy_snow.svg',
+      'HEAVY_SNOW_STORM': 'heavy_snow.svg',
+      'BLOWING_SNOW': 'blowing_snow.svg',
+      'RAIN_AND_SNOW': 'mixed_rain_snow.svg',
+      'HAIL': 'sleet_hail.svg',
+      'HAIL_SHOWERS': 'mixed_rain_hail_sleet.svg',
+      'THUNDERSTORM': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'THUNDERSHOWER': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'LIGHT_THUNDERSTORM_RAIN': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'SCATTERED_THUNDERSTORMS': isDay ? 'isolated_scattered_thunderstorms_day.svg' : 'isolated_scattered_thunderstorms_night.svg',
+      'HEAVY_THUNDERSTORM': 'isolated_thunderstorms.svg',
+      'ICY': 'icy.svg',
+      'BLIZZARD': 'blizzard.svg',
+      'TORNADO': 'tornado.svg',
+      'TROPICAL_STORM': 'tropical_storm_hurricane.svg',
+      'VERY_HOT': 'very_hot.svg',
+      'VERY_COLD': 'very_cold.svg'
+    };
+    
+    // Use v4 repository icons as primary for everyone, with Google Maps as fallback
+    const v4Icon = v4IconMap[finalCondition] || 'cloudy.svg';
+    const fallbackIcon = standardIconMap[finalCondition] || 'cloudy.svg';
+    
+    console.log('🎌 Using v4 repository weather icon (primary):', v4Icon, 'for condition:', finalCondition);
+    return {
+      primary: repoBaseUrl + v4Icon,
+      fallback: fallbackUrl + fallbackIcon
+    };
+  }
+  
+  // Enhanced heat wave detection based on regional climate context
+  function determineHeatWaveThreshold(lat) {
+    // Regional temperature thresholds based on latitude and typical climate zones
+    const tempThresholds = {
+      // Arctic/Subarctic (above 60°N)
+      arctic: { threshold: 20, region: 'Arctic' },
+      // Northern temperate (45-60°N)  
+      northTemperate: { threshold: 28, region: 'Northern Temperate' },
+      // Mid temperate (30-45°N)
+      midTemperate: { threshold: 32, region: 'Mid Temperate' },
+      // Subtropical (15-30°N)
+      subtropical: { threshold: 35, region: 'Subtropical' },
+      // Tropical (0-15°N)
+      tropical: { threshold: 38, region: 'Tropical' },
+      // Southern hemisphere equivalents
+      southTropical: { threshold: 38, region: 'South Tropical' },
+      southSubtropical: { threshold: 35, region: 'South Subtropical' },
+      southTemperate: { threshold: 32, region: 'South Temperate' }
+    };
+    
+    const absLat = Math.abs(lat);
+    
+    if (absLat >= 60) return tempThresholds.arctic;
+    if (absLat >= 45) return lat > 0 ? tempThresholds.northTemperate : tempThresholds.southTemperate;
+    if (absLat >= 30) return tempThresholds.midTemperate;
+    if (absLat >= 15) return lat > 0 ? tempThresholds.subtropical : tempThresholds.southSubtropical;
+    return lat > 0 ? tempThresholds.tropical : tempThresholds.southTropical;
+  }
+  
+  async function fetchWeather(lat, lon){
+    try {
+      // Enhanced API call with additional parameters for better condition detection
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day,wind_speed_10m,precipitation,visibility&timezone=auto`);
+      const j = await r.json();
+      const c = Math.round(j.current.temperature_2m);
+      const f = Math.round(c * 9 / 5 + 32);
+      const isDay = j.current.is_day === 1;
+      
+      // Enhanced weather condition detection using multiple parameters
+      let weatherInfo = googleWeatherCodes[j.current.weather_code] || { condition: 'CLOUDY', description: 'Cloudy' };
+      let condition = weatherInfo.condition;
+      let desc = weatherInfo.description;
+      
+      // Enhanced condition logic using additional parameters
+      const windSpeed = j.current.wind_speed_10m || 0;
+      const precipitation = j.current.precipitation || 0;
+      const visibility = j.current.visibility || 10000;
+      
+      // Wind conditions - now as secondary effects only
+      let isWindy = windSpeed > 18; // Lowered from 20 to 10 km/h
+      let isVeryWindy = windSpeed > 35; // Lowered from 40 to 25 km/h
+      
+      
+      // Add debug logging for wind detection
+      console.log('Wind speed:', windSpeed, 'km/h, isWindy:', isWindy, 'isVeryWindy:', isVeryWindy);
+      
+      // Don't override main weather condition for wind - keep original condition
+      // Wind will be shown as secondary effect below
+      
+      // Visibility-based conditions
+      if (visibility < 1000) {
+        if (j.current.weather_code === 45 || j.current.weather_code === 48) {
+          // Keep existing fog mapping
+        } else if (c < 0 && (j.current.weather_code >= 71 && j.current.weather_code <= 77)) {
+          condition = 'BLOWING_SNOW';
+          desc = 'Blowing Snow';
+        }
+      }
+      
+      // Enhanced snow conditions based on intensity and temperature
+      if (j.current.weather_code >= 71 && j.current.weather_code <= 77) {
+        if (c < -10 && windSpeed > 30) {
+          condition = 'BLIZZARD';
+          desc = 'Blizzard';
+        } else if (j.current.weather_code === 75 && windSpeed > 20) {
+          condition = 'SNOWSTORM';
+          desc = 'Snowstorm';
+        } else if (c < -15) {
+          condition = 'HEAVY_SNOW_STORM';
+          desc = 'Heavy Snow Storm';
+        }
+      }
+      
+      // Enhanced rain conditions
+      if (j.current.weather_code >= 61 && j.current.weather_code <= 67) {
+        if (j.current.weather_code <= 63) {
+          condition = 'LIGHT_RAIN';
+          desc = 'Light Rain';
+        } else if (j.current.weather_code >= 65) {
+          condition = 'HEAVY_RAIN';
+          desc = 'Heavy Rain';
+        } else {
+          condition = 'RAIN';
+          desc = 'Rain';
+        }
+      }
+      
+      // Mixed precipitation detection
+      if (precipitation > 0 && c >= -2 && c <= 2) {
+        if (j.current.weather_code >= 61 && j.current.weather_code <= 67) {
+          condition = 'RAIN_AND_SNOW';
+          desc = 'Rain and Snow';
+        }
+      }
+      
+      // Thunderstorm enhancements
+      if (j.current.weather_code >= 95 && j.current.weather_code <= 99) {
+        if (windSpeed > 40) {
+          condition = 'HEAVY_THUNDERSTORM';
+          desc = 'Severe Thunderstorm';
+        } else if (windSpeed > 25) {
+          condition = 'SCATTERED_THUNDERSTORMS';
+          desc = 'Scattered Thunderstorms';
+        } else if (precipitation > 0) {
+          condition = 'THUNDERSHOWER';
+          desc = 'Thundershower';
+        }
+        
+        // Hail detection for thunderstorms
+        if (j.current.weather_code >= 96) {
+          condition = 'HAIL';
+          desc = j.current.weather_code === 96 ? 'Light Hail' : 'Heavy Hail';
+        }
+      }
+      
+      // Temperature-based extreme conditions
+      if (c > 35) {
+        condition = 'VERY_HOT';
+        desc = 'Very Hot';
+      } else if (c < -20) {
+        condition = 'VERY_COLD';
+        desc = 'Very Cold';
+      }
+      
+      // Change "Clear" to "Sunny" if temperature is above 17°C and condition is clear AND it's daytime
+      if (j.current.weather_code === 0 && c > 17 && condition === 'CLEAR' && isDay) {
+        desc = 'Sunny';
+      }
+      
+      // Get regional heat wave threshold
+      const heatThreshold = determineHeatWaveThreshold(lat);
+      console.log(`Heat wave threshold for region (${heatThreshold.region}): ${heatThreshold.threshold}°C`);
+      
+      // Check for heat wave conditions
+      const isHot = c >= heatThreshold.threshold; // Temperature-based only, regionally appropriate
+      
+      // Add wind description to weather text if windy
+      if (isVeryWindy) {
+        desc += ', Very Windy';
+      } else if (isWindy) {
+        desc += ', Windy';
+      }
+      
+      // Add heat wave description if applicable
+      if (isHot) {
+        desc += ', Heat Wave';
+      }
+      
+      // Set final weather text
+      weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+      
+      // Update weather icon with enhanced condition
+      const weatherIcon = document.getElementById('weather-icon');
+      const iconUrls = getGoogleWeatherIcon(j.current.weather_code, isDay, condition);
+      
+      // Create new image element and preload it
+      const imgElement = document.createElement('img');
+      imgElement.alt = desc;
+      imgElement.style.cssText = 'width: 24px; height: 24px; filter: drop-shadow(-1px -1px 0 #000) drop-shadow(1px -1px 0 #000) drop-shadow(-1px 1px 0 #000) drop-shadow(1px 1px 0 #000) drop-shadow(0 0 4px #000);';
+      
+      // Add error handler for fallback to standard Google icons
+      imgElement.onerror = function() {
+        console.log('Primary weather icon failed, using fallback:', iconUrls.fallback);
+        this.src = iconUrls.fallback;
+      };
+      
+      // Only replace the icon after the new one has loaded to prevent blinking
+      imgElement.onload = function() {
+        // Preserve secondary effects (heat-waves and wind-waves)
+        const heatWaves = weatherIcon.querySelector('#heat-waves');
+        const windWaves = weatherIcon.querySelector('#wind-waves');
+        
+        // Clear and add new main icon
+        weatherIcon.innerHTML = '';
+        weatherIcon.appendChild(imgElement);
+        
+        // Re-add preserved secondary effects
+        if (heatWaves) {
+          weatherIcon.appendChild(heatWaves);
+        }
+        if (windWaves) {
+          weatherIcon.appendChild(windWaves);
+        }
+      };
+      
+      // Start loading the image (this triggers the onload event when ready)
+      imgElement.src = iconUrls.primary;
+      
+      // Show heat waves based on regional threshold (no wind requirement)
+      const heatWaves = document.getElementById('heat-waves');
+      if (heatWaves) {
+        if (isHot) {
+          heatWaves.style.display = 'inline-block';
+          // Position based on whether wind is also showing
+          if (isWindy) {
+            heatWaves.classList.add('with-wind');
+          } else {
+            heatWaves.classList.remove('with-wind');
+          }
+        } else {
+          heatWaves.style.display = 'none';
+          heatWaves.classList.remove('with-wind');
+        }
+      }
+      
+      // Show wind waves if windy conditions
+      const windWaves = document.getElementById('wind-waves');
+      if (windWaves) {
+        if (isWindy) {
+          windWaves.style.display = 'inline-block';
+          
+          // Position wind waves - if no heat, center it; if heat, keep it to the right
+          if (isHot) {
+            windWaves.classList.remove('only-wind');
+            // Update heat waves to show they're with wind
+            if (heatWaves) {
+              heatWaves.classList.add('with-wind');
+            }
+          } else {
+            windWaves.classList.add('only-wind');
+          }
+        } else {
+          windWaves.style.display = 'none';
+          windWaves.classList.remove('only-wind');
+          
+          // Remove wind class from heat waves
+          if (heatWaves) {
+            heatWaves.classList.remove('with-wind');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Weather fetch failed:', error);
+      weatherEl.textContent = "Weather N/A";
+    }
+  }
+  
+  // Method 1: Try IRL Pro location data
+  function getIRLProLocation() {
+    if (window.locationData && window.locationData.latitude && window.locationData.longitude) {
+      return {
+        lat: window.locationData.latitude,
+        lon: window.locationData.longitude,
+        source: "IRL Pro GPS"
+      };
+    }
+    return null;
+  }
+  
+  // Method 2: Try browser GPS
+  function getBrowserGPS(showLoadingMessages = true) {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+  
+      if (showLoadingMessages) {
+        placeEl.textContent = "Grabbing GPS Location...";
+      }
+      
+      const options = {
+        enableHighAccuracy: true,
+        timeout: isIOS ? 60000 : (isMobile ? 45000 : 15000),
+        maximumAge: gpsSuccessful ? 30000 : 0
+      };
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          gpsSuccessful = true;
+          consecutiveGPSFailures = 0;
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracy: Math.round(position.coords.accuracy),
+            source: `GPS (±${Math.round(position.coords.accuracy)}m)`
+          });
+        },
+        (error) => {
+          consecutiveGPSFailures++;
+          reject(error);
+        },
+        options
+      );
+    });
+  }
+  
+  async function updateLocationAndWeather(showLoadingMessages = true){
+    try {
+      let locationData = null;
+      
+      // Try Method 1: IRL Pro location data
+      locationData = getIRLProLocation();
+      
+      // Try Method 2: Browser GPS - Allow retries even after previous failures
+      if (!locationData) {
+        try {
+          locationData = await getBrowserGPS(showLoadingMessages);
+          gpsAttempted = true;
+        } catch (gpsError) {
+          console.warn('GPS failed:', gpsError);
+          gpsAttempted = true;
+        }
+      }
+      
+      // Use last known GPS location as fallback (expanded conditions)
+      if (!locationData && lastKnownGPSLocation) {
+        const now = Date.now();
+        const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
+        
+        // Use cached GPS location if it's recent (within 10 minutes)
+        if (locationAge < 600000) { // 10 minutes
+          locationData = lastKnownGPSLocation;
+          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes)');
+        }
+      }
+      
+      // Update the display
+      if (locationData) {
+        // Only save GPS locations to cache (not IRL Pro data)
+        if (locationData.source.includes('GPS')) {
+          lastKnownGPSLocation = locationData;
+          lastKnownGPSLocation.timestamp = Date.now();
+        }
+        
+        if (showLoadingMessages) {
+          placeEl.textContent = "Loading location...";
+        }
+        const label = await reverseGeocode(locationData.lat, locationData.lon);
+        placeEl.textContent = label;
+        fetchWeather(locationData.lat, locationData.lon);
+        console.log('Location updated:', locationData.source, label);
+      } else {
+        // Only show "GPS N/A" if we truly have no GPS data
+        console.error('No GPS data available from any source');
+        if (showLoadingMessages) {
+          placeEl.textContent = "GPS N/A";
+          weatherEl.textContent = "Weather N/A";
+        }
+        // Don't update display during silent refreshes to avoid flashing "N/A"
+      }
+      
+    } catch (e) {
+      console.error('Location update failed:', e);
+      // Only show error during initial load or user-initiated refresh
+      if (showLoadingMessages) {
+        placeEl.textContent = "GPS N/A";
+        weatherEl.textContent = "Weather N/A";
+      }
+    }
+  }
+  
+  // Auto-refresh every 55 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 55000);
+  
+  // Start immediately (with loading messages)
+  updateLocationAndWeather(true);
+  </script>
+  </body></html> 
