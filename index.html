@@ -74,7 +74,7 @@
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
-      <span id="place">Waiting for GPS…</span>
+      <span id="place">Waiting…</span>
     </div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
@@ -93,7 +93,7 @@
   const weatherEl = document.getElementById('weather');
   const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
   
-  let lastKnownGPSLocation = null;
+  let lastKnownLocation = null;
   let gpsSuccessful = false;
   let gpsAttempted = false;
   let consecutiveGPSFailures = 0;
@@ -127,6 +127,9 @@
         let country = '';
         let isJapan = false;
         
+        // First pass: collect all potential city names
+        let potentialCities = [];
+        
         components.forEach(component => {
           const types = component.types;
           const name = component.long_name;
@@ -139,13 +142,17 @@
             isJapan = true;
           }
           
-          // Filter out specific district/dong names that are too detailed
-          const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || name.includes('(') || name.includes(')');
+          // Collect potential city names
+          if (types.includes('locality')) {
+            potentialCities.push({ name, priority: 1, type: 'locality' });
+          } else if (types.includes('administrative_area_level_2')) {
+            potentialCities.push({ name, priority: 2, type: 'admin_level_2' });
+          } else if (types.includes('sublocality_level_1')) {
+            potentialCities.push({ name, priority: 3, type: 'sublocality' });
+          }
           
-          if (types.includes('locality') && !isDetailedDistrict) {
-            console.log('Setting city to:', name);
-            city = name;
-          } else if (types.includes('administrative_area_level_1') && !isDetailedDistrict) {
+          // Set state and country
+          if (types.includes('administrative_area_level_1')) {
             console.log('Setting state to:', name);
             state = name;
           } else if (types.includes('country')) {
@@ -154,74 +161,93 @@
           }
         });
         
+        // Choose the best city name
+        if (potentialCities.length > 0) {
+          // Sort by priority (lower number = higher priority)
+          potentialCities.sort((a, b) => a.priority - b.priority);
+          
+          // Filter out overly detailed districts
+          const filteredCities = potentialCities.filter(cityObj => {
+            const name = cityObj.name;
+            const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || 
+                                     name.includes('(') || name.includes(')') ||
+                                     name.includes('Ward') || name.includes('District');
+            return !isDetailedDistrict;
+          });
+          
+          // Use the best available city name
+          const bestCity = filteredCities.length > 0 ? filteredCities[0] : potentialCities[0];
+          city = bestCity.name;
+          console.log('Selected city:', city, 'from type:', bestCity.type);
+        }
+        
         // Store Japan status globally for weather icon selection
         window.isLocationInJapan = isJapan;
         
-        // If we filtered out the city due to detailed district, try to find a better one
+        // If still no city, try administrative areas as backup
         if (!city) {
           components.forEach(component => {
             const types = component.types;
             const name = component.long_name;
             
-            // Look for administrative_area_level_1 or other broader locality types
-            if (types.includes('administrative_area_level_1') && name !== state) {
+            if (types.includes('administrative_area_level_2') && name !== state) {
               city = name;
-            } else if (types.includes('locality') && !name.includes('-dong') && !name.includes('(')) {
-              city = name;
+              console.log('Using admin_level_2 as city:', city);
             }
           });
         }
         
-        // Smart redundancy removal
+        // Improved redundancy removal
         function areLocationsSimilar(loc1, loc2) {
           if (!loc1 || !loc2) return false;
           
-          // Exact match
-          if (loc1 === loc2) return true;
+          const l1 = loc1.toLowerCase().trim();
+          const l2 = loc2.toLowerCase().trim();
           
-          // One contains the other (case insensitive)
-          const l1 = loc1.toLowerCase();
-          const l2 = loc2.toLowerCase();
-          if (l1.includes(l2) || l2.includes(l1)) return true;
+          // Exact match
+          if (l1 === l2) return true;
+          
+          // One is a subset of the other (but not just single character differences)
+          if (Math.abs(l1.length - l2.length) > 1) {
+            if (l1.includes(l2) || l2.includes(l1)) return true;
+          }
           
           // Check for common administrative redundancy patterns
-          const adminPatterns = [
-            { shorter: l1, longer: l2 + ' region' },
-            { shorter: l1, longer: l2 + ' province' },
-            { shorter: l1, longer: l2 + ' state' },
-            { shorter: l1, longer: l2 + ' prefecture' },
-            { shorter: l1, longer: l2 + ' district' },
-            { shorter: l2, longer: l1 + ' region' },
-            { shorter: l2, longer: l1 + ' province' },
-            { shorter: l2, longer: l1 + ' state' },
-            { shorter: l2, longer: l1 + ' prefecture' },
-            { shorter: l2, longer: l1 + ' district' }
-          ];
+          const adminSuffixes = ['region', 'province', 'state', 'prefecture', 'district', 'county'];
           
-          return adminPatterns.some(pattern => 
-            pattern.shorter === pattern.longer.replace(/\s+(region|province|state|prefecture|district)$/, '')
-          );
-        }
-        
-        // Remove redundant components
-        if (areLocationsSimilar(city, state)) {
-          console.log('Detected redundant city/state:', city, '/', state);
-          // Keep the more specific one (usually the shorter one, or the one without administrative terms)
-          if (city.length <= state.length && !city.toLowerCase().includes('region') && 
-              !city.toLowerCase().includes('province') && !city.toLowerCase().includes('state')) {
-            state = ''; // Keep city, remove state
-            console.log('Keeping city:', city, 'removing state');
-          } else {
-            city = ''; // Keep state as city, remove redundant city
-            console.log('Using state as city:', state);
+          for (const suffix of adminSuffixes) {
+            if (l1 === l2.replace(new RegExp(`\\s+${suffix}$`), '') ||
+                l2 === l1.replace(new RegExp(`\\s+${suffix}$`), '')) {
+              return true;
+            }
           }
+          
+          return false;
         }
         
-        // If city is empty after redundancy check, use state as city
-        if (!city && state) {
-          city = state;
-          state = '';
-          console.log('Using state as city after redundancy check:', city);
+        // Remove redundant components (be more conservative)
+        if (city && state && areLocationsSimilar(city, state)) {
+          console.log('Detected redundant city/state:', city, '/', state);
+          
+          // Prefer actual city names over administrative areas
+          const cityIsMoreSpecific = city.length < state.length || 
+                                   !state.toLowerCase().includes('region') && 
+                                   !state.toLowerCase().includes('province') &&
+                                   !state.toLowerCase().includes('state');
+          
+          if (cityIsMoreSpecific) {
+            state = ''; // Keep city, remove state
+            console.log('Keeping city:', city, 'removing redundant state');
+          } else {
+            // Only replace city with state if city seems like an administrative area
+            if (city.toLowerCase().includes('region') || 
+                city.toLowerCase().includes('province') ||
+                city.toLowerCase().includes('state')) {
+              city = state;
+              state = '';
+              console.log('Replacing administrative city with state:', city);
+            }
+          }
         }
         
         // Build address string, prioritizing the most specific location
@@ -576,6 +602,148 @@
     });
   }
   
+  // Method 3: Fallback to IP location with multiple services
+  async function getLocationFromGoogle(){
+    try {
+      const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ considerIp: true })
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Google Geolocation API failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`Google Geolocation API error: ${data.error.message}`);
+      }
+      
+      return {
+        lat: data.location.lat,
+        lon: data.location.lng,
+        source: "IP Location (Google)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('Google IP location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  // Alternative IP location services
+  async function getIPLocationFromIpApi() {
+    try {
+      const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon');
+      
+      if (!res.ok) {
+        throw new Error(`IP-API failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.status !== 'success') {
+        throw new Error('IP-API request failed');
+      }
+      
+      return {
+        lat: data.lat,
+        lon: data.lon,
+        source: "IP Location (IP-API)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IP-API location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpInfo() {
+    try {
+      const res = await fetch('https://ipinfo.io/json');
+      
+      if (!res.ok) {
+        throw new Error(`IPInfo failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data.loc) {
+        throw new Error('IPInfo request failed - no location data');
+      }
+      
+      const [lat, lon] = data.loc.split(',').map(Number);
+      return {
+        lat: lat,
+        lon: lon,
+        source: "IP Location (IPInfo)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IPInfo location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpApi2() {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      
+      if (!res.ok) {
+        throw new Error(`IPAPI.co failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`IPAPI.co error: ${data.reason}`);
+      }
+      
+      return {
+        lat: data.latitude,
+        lon: data.longitude,
+        source: "IP Location (IPAPI.co)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IPAPI.co location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  // Try multiple IP location services in order
+  async function getIPLocation() {
+    const services = [
+      getLocationFromGoogle,
+      getIPLocationFromIpApi,
+      getIPLocationFromIpInfo,
+      getIPLocationFromIpApi2
+    ];
+
+    for (const service of services) {
+      try {
+        const result = await service();
+        console.log('IP location success:', result.source);
+        return result;
+      } catch (error) {
+        console.warn('IP location service failed, trying next...', error);
+        continue;
+      }
+    }
+    
+    throw new Error('All IP location services failed');
+  }
+  
   async function updateLocationAndWeather(showLoadingMessages = true){
     try {
       let locationData = null;
@@ -594,26 +762,34 @@
         }
       }
       
-      // Use last known GPS location as fallback (expanded conditions)
-      if (!locationData && lastKnownGPSLocation) {
+      // Try Method 3: IP location fallback
+      if (!locationData) {
+        if (showLoadingMessages) {
+          placeEl.textContent = "Using IP location...";
+        }
+        try {
+          locationData = await getIPLocation();
+        } catch (ipError) {
+          console.error('All IP location services failed:', ipError);
+        }
+      }
+      
+      // Use last known location as final fallback (expanded conditions)
+      if (!locationData && lastKnownLocation) {
         const now = Date.now();
-        const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
+        const locationAge = now - (lastKnownLocation.timestamp || 0);
         
-        // Use cached GPS location if it's recent (within 10 minutes)
-        if (locationAge < 600000) { // 10 minutes
-          locationData = lastKnownGPSLocation;
-          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes)');
+        // Use cached location if it's recent (within 10 minutes) or if all methods failed
+        if (locationAge < 600000) { // 10 minutes instead of 5
+          locationData = lastKnownLocation;
+          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes)');
         }
       }
       
       // Update the display
       if (locationData) {
-        // Only save GPS locations to cache (not IRL Pro data)
-        if (locationData.source.includes('GPS')) {
-          lastKnownGPSLocation = locationData;
-          lastKnownGPSLocation.timestamp = Date.now();
-        }
-        
+        lastKnownLocation = locationData;
+        lastKnownLocation.timestamp = Date.now();
         if (showLoadingMessages) {
           placeEl.textContent = "Loading location...";
         }
@@ -622,10 +798,10 @@
         fetchWeather(locationData.lat, locationData.lon);
         console.log('Location updated:', locationData.source, label);
       } else {
-        // Only show "GPS N/A" if we truly have no GPS data
-        console.error('No GPS data available from any source');
+        // Only show "Location N/A" if we truly have no fallback options
+        console.error('No location data available from any source');
         if (showLoadingMessages) {
-          placeEl.textContent = "GPS N/A";
+          placeEl.textContent = "Location N/A";
           weatherEl.textContent = "Weather N/A";
         }
         // Don't update display during silent refreshes to avoid flashing "N/A"
@@ -635,8 +811,8 @@
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
       if (showLoadingMessages) {
-        placeEl.textContent = "GPS N/A";
-        weatherEl.textContent = "Weather N/A";
+      placeEl.textContent = "Location N/A";
+      weatherEl.textContent = "Weather N/A";
       }
     }
   }
