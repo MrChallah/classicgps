@@ -97,6 +97,8 @@
   let gpsSuccessful = false;
   let gpsAttempted = false;
   let consecutiveGPSFailures = 0;
+  let lastWeatherData = null; // Cache last successful weather
+  let lastWeatherTimestamp = 0; // Track when weather was last fetched
   
   // Detect if we're on mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -493,6 +495,20 @@
         desc += ', Heat Wave';
       }
       
+      // Cache successful weather data
+      lastWeatherData = {
+        temperature: c,
+        fahrenheit: f,
+        description: desc,
+        weatherCode: j.current.weather_code,
+        isDay: isDay,
+        isHot: isHot,
+        isWindy: isWindy,
+        lat: lat,
+        lon: lon
+      };
+      lastWeatherTimestamp = Date.now();
+      
       weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
       
       // Update weather icon
@@ -548,7 +564,48 @@
       }
     } catch (error) {
       console.error('Weather fetch failed:', error);
-      weatherEl.textContent = "Weather N/A";
+      
+      // Use cached weather data if it's recent (within 10 minutes) instead of showing "Weather N/A"
+      if (lastWeatherData && (Date.now() - lastWeatherTimestamp) < 600000) {
+        console.log('Using cached weather data due to fetch failure');
+        const cached = lastWeatherData;
+        weatherEl.textContent = `${cached.temperature}°C | ${cached.fahrenheit}°F, ${cached.description} (cached)`;
+        
+        // Update weather icon with cached data
+        const weatherIconMain = document.getElementById('weather-icon-main');
+        const iconClass = getWeatherIcon(cached.weatherCode, cached.isDay, cached.temperature);
+        weatherIconMain.className = 'weather-icon-main';
+        weatherIconMain.classList.add('fa-solid', iconClass);
+        
+        // Update secondary effects with cached data
+        const heatWaves = document.getElementById('heat-waves');
+        const windWaves = document.getElementById('wind-waves');
+        
+        if (heatWaves) {
+          heatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
+          if (cached.isHot && cached.isWindy) {
+            heatWaves.classList.add('with-wind');
+          } else {
+            heatWaves.classList.remove('with-wind');
+          }
+        }
+        
+        if (windWaves) {
+          windWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
+          if (cached.isWindy) {
+            if (cached.isHot) {
+              windWaves.classList.remove('only-wind');
+            } else {
+              windWaves.classList.add('only-wind');
+            }
+          } else {
+            windWaves.classList.remove('only-wind');
+          }
+        }
+      } else {
+        // Only show "Weather N/A" if no recent cached data is available
+        weatherEl.textContent = "Weather N/A";
+      }
     }
   }
   
@@ -798,21 +855,31 @@
         fetchWeather(locationData.lat, locationData.lon);
         console.log('Location updated:', locationData.source, label);
       } else {
-        // Only show "Location N/A" if we truly have no fallback options
-        console.error('No location data available from any source');
+        // During silent refreshes, don't immediately show "Location N/A" - keep existing display
         if (showLoadingMessages) {
+          // Only show "Location N/A" during initial load or user-initiated refresh
+          console.error('No location data available from any source');
           placeEl.textContent = "Location N/A";
-          weatherEl.textContent = "Weather N/A";
+          
+          // Don't immediately clear weather - let the weather fetch handle caching
+          if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
+            weatherEl.textContent = "Weather N/A";
+          }
+        } else {
+          // During silent refresh failures, just log the issue but keep existing display
+          console.log('Silent location refresh failed, keeping existing display');
         }
-        // Don't update display during silent refreshes to avoid flashing "N/A"
       }
       
     } catch (e) {
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
       if (showLoadingMessages) {
-      placeEl.textContent = "Location N/A";
-      weatherEl.textContent = "Weather N/A";
+        placeEl.textContent = "Location N/A";
+        // Don't immediately clear weather - let cached data persist
+        if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
+          weatherEl.textContent = "Weather N/A";
+        }
       }
     }
   }
