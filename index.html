@@ -74,7 +74,7 @@
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
-      <span id="place">Waiting…</span>
+      <span id="place">Waiting for GPS…</span>
     </div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
@@ -93,7 +93,7 @@
   const weatherEl = document.getElementById('weather');
   const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
   
-  let lastKnownLocation = null;
+  let lastKnownGPSLocation = null;
   let gpsSuccessful = false;
   let gpsAttempted = false;
   let consecutiveGPSFailures = 0;
@@ -262,8 +262,8 @@
             if (city.toLowerCase().includes('region') || 
                 city.toLowerCase().includes('province') ||
                 city.toLowerCase().includes('state')) {
-          city = state;
-          state = '';
+              city = state;
+              state = '';
               console.log('Replacing administrative city with state:', city);
             }
           }
@@ -588,7 +588,7 @@
         const cached = lastWeatherData;
         weatherEl.textContent = `${cached.temperature}°C | ${cached.fahrenheit}°F, ${cached.description} (cached)`;
         
-        // Update weather icon with cached data
+        // Update icons with cached data
         const weatherIconMain = document.getElementById('weather-icon-main');
         const iconClass = getWeatherIcon(cached.weatherCode, cached.isDay, cached.temperature);
         weatherIconMain.className = 'weather-icon-main';
@@ -621,7 +621,7 @@
         }
       } else {
         // Only show "Weather N/A" if no recent cached data is available
-      weatherEl.textContent = "Weather N/A";
+        weatherEl.textContent = "Weather N/A";
       }
     }
   }
@@ -676,148 +676,6 @@
     });
   }
   
-  // Method 3: Fallback to IP location with multiple services
-  async function getLocationFromGoogle(){
-    try {
-      const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ considerIp: true })
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Google Geolocation API failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(`Google Geolocation API error: ${data.error.message}`);
-      }
-      
-      return {
-        lat: data.location.lat,
-        lon: data.location.lng,
-        source: "IP Location (Google)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('Google IP location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  // Alternative IP location services
-  async function getIPLocationFromIpApi() {
-    try {
-      const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon');
-      
-      if (!res.ok) {
-        throw new Error(`IP-API failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.status !== 'success') {
-        throw new Error('IP-API request failed');
-      }
-      
-      return {
-        lat: data.lat,
-        lon: data.lon,
-        source: "IP Location (IP-API)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('IP-API location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  async function getIPLocationFromIpInfo() {
-    try {
-      const res = await fetch('https://ipinfo.io/json');
-      
-      if (!res.ok) {
-        throw new Error(`IPInfo failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (!data.loc) {
-        throw new Error('IPInfo request failed - no location data');
-      }
-      
-      const [lat, lon] = data.loc.split(',').map(Number);
-      return {
-        lat: lat,
-        lon: lon,
-        source: "IP Location (IPInfo)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('IPInfo location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  async function getIPLocationFromIpApi2() {
-    try {
-      const res = await fetch('https://ipapi.co/json/');
-      
-      if (!res.ok) {
-        throw new Error(`IPAPI.co failed: ${res.status} ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        throw new Error(`IPAPI.co error: ${data.reason}`);
-      }
-      
-      return {
-        lat: data.latitude,
-        lon: data.longitude,
-        source: "IP Location (IPAPI.co)"
-      };
-    } catch (error) {
-      // Don't log CORS errors as they're expected when opening HTML files locally
-      if (!error.message.includes('CORS') && !error.message.includes('403')) {
-        console.warn('IPAPI.co location failed:', error.message);
-      }
-      throw error;
-    }
-  }
-
-  // Try multiple IP location services in order
-  async function getIPLocation() {
-    const services = [
-      getLocationFromGoogle,
-      getIPLocationFromIpApi,
-      getIPLocationFromIpInfo,
-      getIPLocationFromIpApi2
-    ];
-
-    for (const service of services) {
-      try {
-        const result = await service();
-        console.log('IP location success:', result.source);
-        return result;
-      } catch (error) {
-        console.warn('IP location service failed, trying next...', error);
-        continue;
-      }
-    }
-    
-    throw new Error('All IP location services failed');
-  }
-  
   async function updateLocationAndWeather(showLoadingMessages = true){
     try {
       let locationData = null;
@@ -836,34 +694,26 @@
         }
       }
       
-      // Try Method 3: IP location fallback
-      if (!locationData) {
-        if (showLoadingMessages) {
-          placeEl.textContent = "Using IP location...";
-        }
-        try {
-          locationData = await getIPLocation();
-        } catch (ipError) {
-          console.error('All IP location services failed:', ipError);
-        }
-      }
-      
-      // Use last known location as final fallback (expanded conditions)
-      if (!locationData && lastKnownLocation) {
+      // Use last known GPS location as fallback (expanded conditions)
+      if (!locationData && lastKnownGPSLocation) {
         const now = Date.now();
-        const locationAge = now - (lastKnownLocation.timestamp || 0);
+        const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
         
-        // Use cached location if it's recent (within 10 minutes) or if all methods failed
-        if (locationAge < 600000) { // 10 minutes instead of 5
-          locationData = lastKnownLocation;
-          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes)');
+        // Use cached GPS location if it's recent (within 10 minutes)
+        if (locationAge < 600000) { // 10 minutes
+          locationData = lastKnownGPSLocation;
+          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes)');
         }
       }
       
       // Update the display
       if (locationData) {
-        lastKnownLocation = locationData;
-        lastKnownLocation.timestamp = Date.now();
+        // Only save GPS locations to cache (not IRL Pro data)
+        if (locationData.source.includes('GPS')) {
+          lastKnownGPSLocation = locationData;
+          lastKnownGPSLocation.timestamp = Date.now();
+        }
+        
         if (showLoadingMessages) {
           placeEl.textContent = "Loading location...";
         }
@@ -872,15 +722,15 @@
         fetchWeather(locationData.lat, locationData.lon);
         console.log('Location updated:', locationData.source, label);
       } else {
-        // During silent refreshes, don't immediately show "Location N/A" - keep existing display
+        // During silent refreshes, don't immediately show "GPS N/A" - keep existing display
         if (showLoadingMessages) {
-          // Only show "Location N/A" during initial load or user-initiated refresh
-          console.error('No location data available from any source');
-          placeEl.textContent = "Location N/A";
+          // Only show "GPS N/A" during initial load or user-initiated refresh
+          console.error('No GPS data available from any source');
+          placeEl.textContent = "GPS N/A";
           
           // Don't immediately clear weather - let the weather fetch handle caching
           if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
-          weatherEl.textContent = "Weather N/A";
+            weatherEl.textContent = "Weather N/A";
           }
         } else {
           // During silent refresh failures, just log the issue but keep existing display
@@ -892,10 +742,10 @@
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
       if (showLoadingMessages) {
-      placeEl.textContent = "Location N/A";
+        placeEl.textContent = "GPS N/A";
         // Don't immediately clear weather - let cached data persist
         if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
-      weatherEl.textContent = "Weather N/A";
+          weatherEl.textContent = "Weather N/A";
         }
       }
     }
