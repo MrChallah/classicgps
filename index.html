@@ -74,7 +74,7 @@
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
       <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
-      <span id="place">Waiting for GPS…</span>
+      <span id="place">Waiting…</span>
     </div>
     <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
       <span class="info-icon me-2">
@@ -93,7 +93,7 @@
   const weatherEl = document.getElementById('weather');
   const GOOGLE_GEO_KEY = 'AIzaSyBFwxZu_EqPgs7pEqk1uHn1f46F6vUoEFU';
   
-  let lastKnownGPSLocation = null;
+  let lastKnownLocation = null;
   let gpsSuccessful = false;
   let gpsAttempted = false;
   let consecutiveGPSFailures = 0;
@@ -262,8 +262,8 @@
             if (city.toLowerCase().includes('region') || 
                 city.toLowerCase().includes('province') ||
                 city.toLowerCase().includes('state')) {
-              city = state;
-              state = '';
+          city = state;
+          state = '';
               console.log('Replacing administrative city with state:', city);
             }
           }
@@ -330,43 +330,110 @@
       // Check if Japan in Nominatim response
       window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
       
-      // Smart city name selection - avoid administrative names
+      // Enhanced Nominatim city name selection with priority-based approach
       let city = '';
       let state = '';
       let country = addr.country || '';
       
-      // Prefer village/town over city if city contains administrative terms
+      // Collect all potential city names from Nominatim with priorities
+      let potentialCities = [];
+      
+      // Priority 1: Primary city designations
+      if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
+        potentialCities.push({ name: addr.city, priority: 1, type: 'city' });
+      }
+      if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
+        potentialCities.push({ name: addr.town, priority: 1, type: 'town' });
+      }
       if (addr.village && !addr.village.includes('Capital') && !addr.village.includes('City of')) {
-        city = addr.village;
-      } else if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
-        city = addr.town;
-      } else if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
-        city = addr.city;
-      } else if (addr.state && addr.state !== addr.city) {
-        // If city has administrative terms, use state as city if they're different
-        city = addr.state;
-        state = ''; // Don't duplicate
-      } else {
-        // Last resort - clean up the city name
-        city = (addr.city || addr.town || addr.village || '').replace(/^Capital City of /, '');
+        potentialCities.push({ name: addr.village, priority: 1, type: 'village' });
       }
       
-      // Only set state if it's different from city and doesn't contain administrative terms
-      if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
-        // Check for redundancy with Nominatim data too
+      // Priority 2: Administrative areas that often contain city names
+      if (addr.municipality && addr.municipality !== addr.city && addr.municipality !== addr.town) {
+        potentialCities.push({ name: addr.municipality, priority: 2, type: 'municipality' });
+      }
+      if (addr.county && addr.county !== addr.city && addr.county !== addr.town && !addr.county.includes('County')) {
+        potentialCities.push({ name: addr.county, priority: 2, type: 'county' });
+      }
+      
+      // Priority 3: Suburban/district areas
+      if (addr.suburb && addr.suburb !== addr.city && addr.suburb !== addr.town) {
+        potentialCities.push({ name: addr.suburb, priority: 3, type: 'suburb' });
+      }
+      if (addr.neighbourhood && addr.neighbourhood !== addr.city && addr.neighbourhood !== addr.town) {
+        potentialCities.push({ name: addr.neighbourhood, priority: 3, type: 'neighbourhood' });
+      }
+      
+      // Priority 4: State/region as last resort
+      if (addr.state && addr.state !== addr.city && addr.state !== addr.town) {
+        potentialCities.push({ name: addr.state, priority: 4, type: 'state_as_city' });
+      }
+      
+      console.log('Nominatim potential cities:', potentialCities);
+      
+      // Filter out overly detailed districts and administrative names
+      const filteredCities = potentialCities.filter(cityObj => {
+        const name = cityObj.name;
+        const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || 
+                                 name.includes('(') || name.includes(')') ||
+                                 name.includes('Ward') || name.includes('District') ||
+                                 name.includes('Capital') || name.includes('City of') ||
+                                 name.includes('County') || name.includes('Region');
+        return !isDetailedDistrict;
+      });
+      
+      // Choose the best city name
+      if (filteredCities.length > 0) {
+        // Sort by priority (lower number = higher priority)
+        filteredCities.sort((a, b) => a.priority - b.priority);
+        const bestCity = filteredCities[0];
+        city = bestCity.name;
+        console.log('Selected Nominatim city:', city, 'from type:', bestCity.type);
+        
+        // Don't use state as city if we found a real city
+        if (bestCity.type === 'state_as_city') {
+          state = ''; // Don't duplicate state
+        } else {
+          // Set state normally if we found a real city
+          if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
+            state = addr.state;
+          }
+        }
+      } else if (potentialCities.length > 0) {
+        // Use unfiltered if filtered list is empty
+        potentialCities.sort((a, b) => a.priority - b.priority);
+        const bestCity = potentialCities[0];
+        city = bestCity.name.replace(/^Capital City of /, '');
+        console.log('Selected Nominatim city (unfiltered):', city, 'from type:', bestCity.type);
+        
+        if (bestCity.type === 'state_as_city') {
+          state = '';
+        } else if (addr.state && addr.state !== city) {
+          state = addr.state;
+        }
+      }
+      
+      // Enhanced redundancy removal for Nominatim
+      if (city && state) {
         const cityLower = city.toLowerCase();
-        const stateLower = addr.state.toLowerCase();
+        const stateLower = state.toLowerCase();
         
         const isRedundant = cityLower === stateLower ||
                            cityLower.includes(stateLower) || 
                            stateLower.includes(cityLower) ||
-                           cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district)$/, '') ||
-                           stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district)$/, '');
+                           cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district|county)$/, '') ||
+                           stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district|county)$/, '');
         
-        if (!isRedundant) {
-          state = addr.state;
-        } else {
-          console.log('Detected Nominatim redundancy between city and state:', city, '/', addr.state);
+        if (isRedundant) {
+          console.log('Detected Nominatim redundancy between city and state:', city, '/', state);
+          // Prefer the shorter, more specific name
+          if (city.length <= state.length) {
+            state = ''; // Keep city, remove state
+          } else {
+            city = state; // Use state as city
+            state = '';
+          }
         }
       }
       
@@ -588,7 +655,7 @@
         const cached = lastWeatherData;
         weatherEl.textContent = `${cached.temperature}°C | ${cached.fahrenheit}°F, ${cached.description} (cached)`;
         
-        // Update icons with cached data
+        // Update weather icon with cached data
         const weatherIconMain = document.getElementById('weather-icon-main');
         const iconClass = getWeatherIcon(cached.weatherCode, cached.isDay, cached.temperature);
         weatherIconMain.className = 'weather-icon-main';
@@ -621,7 +688,7 @@
         }
       } else {
         // Only show "Weather N/A" if no recent cached data is available
-        weatherEl.textContent = "Weather N/A";
+      weatherEl.textContent = "Weather N/A";
       }
     }
   }
@@ -676,6 +743,148 @@
     });
   }
   
+  // Method 3: Fallback to IP location with multiple services
+  async function getLocationFromGoogle(){
+    try {
+      const res = await fetch("https://www.googleapis.com/geolocation/v1/geolocate?key=" + GOOGLE_GEO_KEY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ considerIp: true })
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Google Geolocation API failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`Google Geolocation API error: ${data.error.message}`);
+      }
+      
+      return {
+        lat: data.location.lat,
+        lon: data.location.lng,
+        source: "IP Location (Google)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('Google IP location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  // Alternative IP location services
+  async function getIPLocationFromIpApi() {
+    try {
+      const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon');
+      
+      if (!res.ok) {
+        throw new Error(`IP-API failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.status !== 'success') {
+        throw new Error('IP-API request failed');
+      }
+      
+      return {
+        lat: data.lat,
+        lon: data.lon,
+        source: "IP Location (IP-API)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IP-API location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpInfo() {
+    try {
+      const res = await fetch('https://ipinfo.io/json');
+      
+      if (!res.ok) {
+        throw new Error(`IPInfo failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (!data.loc) {
+        throw new Error('IPInfo request failed - no location data');
+      }
+      
+      const [lat, lon] = data.loc.split(',').map(Number);
+      return {
+        lat: lat,
+        lon: lon,
+        source: "IP Location (IPInfo)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IPInfo location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  async function getIPLocationFromIpApi2() {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      
+      if (!res.ok) {
+        throw new Error(`IPAPI.co failed: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(`IPAPI.co error: ${data.reason}`);
+      }
+      
+      return {
+        lat: data.latitude,
+        lon: data.longitude,
+        source: "IP Location (IPAPI.co)"
+      };
+    } catch (error) {
+      // Don't log CORS errors as they're expected when opening HTML files locally
+      if (!error.message.includes('CORS') && !error.message.includes('403')) {
+        console.warn('IPAPI.co location failed:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  // Try multiple IP location services in order
+  async function getIPLocation() {
+    const services = [
+      getLocationFromGoogle,
+      getIPLocationFromIpApi,
+      getIPLocationFromIpInfo,
+      getIPLocationFromIpApi2
+    ];
+
+    for (const service of services) {
+      try {
+        const result = await service();
+        console.log('IP location success:', result.source);
+        return result;
+      } catch (error) {
+        console.warn('IP location service failed, trying next...', error);
+        continue;
+      }
+    }
+    
+    throw new Error('All IP location services failed');
+  }
+  
   async function updateLocationAndWeather(showLoadingMessages = true){
     try {
       let locationData = null;
@@ -694,26 +903,34 @@
         }
       }
       
-      // Use last known GPS location as fallback (expanded conditions)
-      if (!locationData && lastKnownGPSLocation) {
+      // Try Method 3: IP location fallback
+      if (!locationData) {
+        if (showLoadingMessages) {
+          placeEl.textContent = "Using IP location...";
+        }
+        try {
+          locationData = await getIPLocation();
+        } catch (ipError) {
+          console.error('All IP location services failed:', ipError);
+        }
+      }
+      
+      // Use last known location as final fallback (expanded conditions)
+      if (!locationData && lastKnownLocation) {
         const now = Date.now();
-        const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
+        const locationAge = now - (lastKnownLocation.timestamp || 0);
         
-        // Use cached GPS location if it's recent (within 10 minutes)
-        if (locationAge < 600000) { // 10 minutes
-          locationData = lastKnownGPSLocation;
-          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes)');
+        // Use cached location if it's recent (within 10 minutes) or if all methods failed
+        if (locationAge < 600000) { // 10 minutes instead of 5
+          locationData = lastKnownLocation;
+          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes)');
         }
       }
       
       // Update the display
       if (locationData) {
-        // Only save GPS locations to cache (not IRL Pro data)
-        if (locationData.source.includes('GPS')) {
-          lastKnownGPSLocation = locationData;
-          lastKnownGPSLocation.timestamp = Date.now();
-        }
-        
+        lastKnownLocation = locationData;
+        lastKnownLocation.timestamp = Date.now();
         if (showLoadingMessages) {
           placeEl.textContent = "Loading location...";
         }
@@ -722,16 +939,16 @@
         fetchWeather(locationData.lat, locationData.lon);
         console.log('Location updated:', locationData.source, label);
       } else {
-        // During silent refreshes, don't immediately show "GPS N/A" - keep existing display
+        // During silent refreshes, don't immediately show "Location N/A" - keep existing display
         if (showLoadingMessages) {
-          // Only show "GPS N/A" during initial load or user-initiated refresh
-          console.error('No GPS data available from any source');
-          placeEl.textContent = "GPS N/A";
+          // Only show "Location N/A" during initial load or user-initiated refresh
+          console.error('No location data available from any source');
+          placeEl.textContent = "Location N/A";
           
           // Don't immediately clear weather - let the weather fetch handle caching
           if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
-            weatherEl.textContent = "Weather N/A";
-          }
+          weatherEl.textContent = "Weather N/A";
+        }
         } else {
           // During silent refresh failures, just log the issue but keep existing display
           console.log('Silent location refresh failed, keeping existing display');
@@ -742,10 +959,10 @@
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
       if (showLoadingMessages) {
-        placeEl.textContent = "GPS N/A";
+      placeEl.textContent = "Location N/A";
         // Don't immediately clear weather - let cached data persist
         if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
-          weatherEl.textContent = "Weather N/A";
+      weatherEl.textContent = "Weather N/A";
         }
       }
     }
