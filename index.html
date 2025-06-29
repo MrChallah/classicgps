@@ -1,357 +1,844 @@
-# GPS + IP GEO Location Dual Mode Overlay - for Kick/Twitch/YouTube/Rumble and More!
-
-# Credits
-Weather icons from [@mrdarrengriffin](https://github.com/mrdarrengriffin/google-weather-icons) - A collection of the official weather icons used by Google officially.
-
-## Four Versions Available
-
-### 🌐 IP-Only Version (Most Compatible) - Best for OBS/Prism Live
-**URL:** `https://mrchallah.github.io/iploc`
-- **Best for:** PRISM Live, OBS, XSplit, and most streaming apps
-- **Accuracy:** Lower (IP-based location)
-- **Compatibility:** Universal - works in all environments
-- **Weather Icons:** Japanese Google Weather Icons
-- **Use case:** When you need maximum compatibility across different streaming platforms like OBS and PRISM Live Studio
-
-### 📍 GPS + IP Version (Most Accurate) - Best for IRL Pro
-**URL:** `https://mrchallah.github.io/`
-- **Best for:** IRL Pro and GPS-capable environments
-- **Accuracy:** High (GPS + IP fallback)
-- **Compatibility:** Limited to GPS-friendly environments
-- **Weather Icons:** Japanese Google Weather Icons
-- **Use case:** When you need precise location data and are using apps like IRL Pro
-
-### 🎨 Font Awesome IP-Only Version (Alternative Style)
-**URL:** `https://mrchallah.github.io/classiciploc`
-- **Best for:** Users who prefer Font Awesome icon style
-- **Accuracy:** Lower (IP-based location)
-- **Compatibility:** Universal - works in all environments
-- **Weather Icons:** Font Awesome icons with day/night variations
-- **Use case:** Alternative styling for OBS, PRISM Live, and streaming apps
-
-### 🎨📍 Font Awesome GPS + IP Version (Alternative Style + Accuracy)
-**URL:** `https://mrchallah.github.io/classic`
-- **Best for:** Users who prefer Font Awesome icons with GPS accuracy
-- **Accuracy:** High (GPS + IP fallback)
-- **Compatibility:** Limited to GPS-friendly environments, includes PRISM Live support
-- **Weather Icons:** Font Awesome icons with day/night variations
-- **Use case:** Alternative styling for IRL Pro and apps requiring GPS precision
-
-## Quick Setup
-
-### For PRISM Live / OBS / Most Streaming Apps
-**Japanese Google Weather Icons:** `https://mrchallah.github.io/iploc`
-**Font Awesome Icons:** `https://mrchallah.github.io/classiciploc`
-
-### For IRL Pro / GPS-Capable Apps
-**Japanese Google Weather Icons:** `https://mrchallah.github.io/`
-**Font Awesome Icons:** `https://mrchallah.github.io/classic`
-
-## Features
-
-### 🕒 Real-Time Clock
-- Displays current date and time.
-- Format: "DD/MM/YYYY, HH:MM:SS AM/PM"
-- Updates every second
-
-### 📍 Location Detection
-
-#### IP-Only Version Features:
-- **PRISM Live Integration** - Detects and uses PRISM Live's location data
-- **Universal IP Location** - Works with Google, IP-API, IPInfo, and IPAPI.co
-- **App Environment Detection** - Automatically detects streaming app environments
-- **No GPS Conflicts** - Avoids GPS permission issues in app environments
-
-#### GPS+IP Version Features:
-- **IRL Pro GPS** - Primary source for IRL Pro users
-- **High-Accuracy GPS** - Browser-based GPS with mobile optimization
-- **Smart Fallback** - Falls back to IP location when GPS fails
-- **GPS Caching** - Remembers recent GPS data for reliability
-
-### 🌤️ Enhanced Weather Information
-- **Two Icon Styles Available** - Choose between Japanese Google weather icons or Font Awesome icons
-- **Enhanced Weather Detection** - Uses multiple Open-Meteo parameters (wind speed, precipitation, visibility, temperature) for comprehensive condition analysis
-- **Complete Weather Coverage** - Supports all weather conditions including:
-  - Wind conditions (windy, wind with rain, blizzards)
-  - All precipitation types (light/moderate/heavy rain, snow, mixed precipitation, hail)
-  - Severe weather (thunderstorms, tornadoes, tropical storms)
-  - Extreme conditions (very hot, very cold, icy conditions)
-  - Special conditions (fog, dust, blowing snow)
-- **Smart Weather Logic** - Temperature-based descriptions (shows "Sunny" instead of "Clear" when temperature > 27°C)
-- **Day/Night Icon Variations** - Proper weather icons that change based on time of day
-- **Reliable Fallback System** - Japanese Google weather icons automatically fall back to Google Maps icons if they fail to load
-- **Current temperature** in both Celsius and Fahrenheit
-- **Detailed weather descriptions** with accurate condition mapping
-- **Powered by Open Meteo API** (no API key required)
-
-### 🎭 Heat Wave & Wind Effects
-- **Animated Heat Wave Indicator** - Shows when temperature exceeds regional thresholds
-- **Animated Wind Indicator** - Displays during windy conditions (>18 km/h)
-- **Smart Positioning** - Heat and wind effects position automatically based on combinations
-- **Regional Heat Wave Detection** - Intelligent temperature thresholds based on geographic location
-
-### 📱 Mobile & App Optimized
-- Enhanced timeout settings for iOS devices
-- Streaming app compatibility detection
-- Mobile-specific GPS handling
-- Responsive design for all screen sizes
-
-## Weather Icon Systems
-
-### 🎌 Japanese Google Weather Icons (Default)
-
-**Primary choice for most users** - Beautiful distinctive Google Weather Icon designs
-
-- **Premium Visual Experience** - Distinctive Google Weather Icon designs from official Google collection
-- **Enhanced Weather Detection** - Advanced condition analysis using wind speed, precipitation, visibility, and temperature
-- **Complete Weather Coverage** - Icons for all weather conditions including extreme weather, mixed precipitation, and severe storms
-- **Automatic Fallback** - Seamlessly falls back to Google Maps icons if Google Weather Icons fail to load
-- **Day/Night Variations** - Proper time-of-day specific icons for enhanced accuracy
-
-### 🎨 Font Awesome Icons (Alternative)
-
-**Alternative choice for different visual preference** - Clean, standardized Font Awesome weather icons
-
-- **Consistent Font Awesome Style** - Uses familiar fa-sun, fa-cloud, fa-snowflake, etc. icons
-- **Day/Night Icon Variations** - fa-sun/fa-moon for clear conditions, fa-cloud-sun/fa-cloud-moon for partial clouds
-- **Enhanced Weather Mapping** - Comprehensive weather code mapping including:
-  - Clear/Sunny: fa-sun (day) / fa-moon (night)
-  - Partly Cloudy: fa-cloud-sun (day) / fa-cloud-moon (night)
-  - Rain: fa-cloud-rain / fa-cloud-showers-heavy (heavy rain)
-  - Snow: fa-snowflake for all snow conditions
-  - Thunderstorms: fa-cloud-bolt
-  - Fog: fa-eye-slash
-- **Heat & Wind Effects Preserved** - Still includes animated heat wave (fa-water) and wind (fa-wind) indicators
-- **No Fallback Needed** - Font Awesome icons load reliably from CDN
-
-### 🌍 Comprehensive Weather Conditions
-
-Both icon systems detect and display icons for:
-
-#### 🌬️ **Wind Conditions**
-- Windy conditions (wind speed > 18 km/h)
-- Very windy conditions (wind speed > 35 km/h)
-- Wind with rain combinations
-- Blowing snow in cold conditions
-
-#### ❄️ **Enhanced Snow Detection**
-- Blizzards (temperature < -10°C + high wind)
-- Snowstorms (heavy snow + moderate wind)
-- Heavy snow storms (extremely cold conditions)
-- Snow with various intensities and wind combinations
-
-#### 🌧️ **Advanced Rain Detection**
-- Light, moderate, and heavy rain distinctions
-- Mixed rain and snow (near freezing temperatures)
-- Rain with wind combinations
-
-#### ⛈️ **Severe Weather**
-- Thunderstorms with intensity variations
-- Hail detection in thunderstorms
-- Scattered vs. heavy thunderstorms based on wind speed
-
-#### 🌡️ **Extreme Temperature Conditions**
-- Very hot conditions (> 35°C)
-- Very cold conditions (< -20°C)
-- Temperature-aware weather descriptions
-
-## Detailed Compatibility
-
-### IP-Only Versions
-✅ **Works Great With:**
-- PRISM Live
-- OBS Studio
-- XSplit
-- Streamlabs Desktop
-- Any streaming software
-- Mobile browsers
-- Desktop browsers
-
-❌ **Limitations:**
-- Less accurate location (city-level)
-- No GPS precision
-
-### GPS+IP Versions
-✅ **Works Great With:**
-- IRL Pro
-- Desktop browsers with GPS
-- Mobile browsers
-- Direct browser usage
-
-❌ **Limitations:**
-- May not work in PRISM Live
-- Can have GPS permission conflicts in some apps
-- Requires location permissions
-
-## Setup Instructions
-
-### Method 1: Browser Source (OBS/Streaming Software)
-1. Add a new "Browser Source"
-2. Choose your preferred version:
-   - **Japanese Google Weather Icons + IP**: `https://mrchallah.github.io/iploc`
-   - **Font Awesome + IP**: `https://mrchallah.github.io/classiciploc`
-   - **Japanese Google Weather Icons + GPS**: `https://mrchallah.github.io/`
-   - **Font Awesome + GPS**: `https://mrchallah.github.io/classic`
-3. Set width: 800, height: 600 (or as needed)
-4. Check "Shutdown source when not visible" for performance
-
-### Method 2: PRISM Live Overlay
-1. Go to PRISM Live overlay settings
-2. Add web overlay with URL (choose IP-only version):
-   - **Japanese Google Weather Icons**: `https://mrchallah.github.io/iploc`
-   - **Font Awesome**: `https://mrchallah.github.io/classiciploc`
-3. Position as desired
-
-### Method 3: IRL Pro Integration
-1. Choose GPS version:
-   - **Japanese Google Weather Icons**: `https://mrchallah.github.io/`
-   - **Font Awesome**: `https://mrchallah.github.io/classic`
-2. Allow location permissions when prompted
-3. IRL Pro's GPS data will be automatically detected and used
-
-## Configuration
-
-### Location Refresh
-All versions auto-refresh location data every 90 seconds to ensure current information while preserving performance.
-
-### App Detection (IP-Only Versions)
-The IP-only versions automatically detect streaming app environments and optimize accordingly:
-- Skips GPS attempts in app environments
-- Uses specialized PRISM Live location interfaces
-- Falls back to multiple IP location services
-
-### Enhanced Weather System
-- **Two Icon Style Options** - Choose between Japanese Google Weather icons or Font Awesome icons
-- **Multi-Parameter Detection** - Uses wind speed, precipitation, visibility, and temperature for accurate condition analysis
-- **Comprehensive Coverage** - All Google Weather API condition types supported with appropriate icons
-- **Smart Fallback System** - Japanese Google Weather icons versions have reliable icon loading with automatic fallback to Google Maps icons
-- **Advanced Weather Logic** - Temperature-aware descriptions and extreme weather detection
-
-## API Dependencies
-
-### No API Keys Required!
-All versions use free services:
-- **Reverse Geocoding**: Google Maps API (with Nominatim fallback)
-- **Weather**: Enhanced Open Meteo API with multi-parameter detection (wind_speed_10m, precipitation, visibility, temperature_2m, weather_code, is_day)
-- **IP Location**: Multiple free services (Google, IP-API, IPInfo, IPAPI.co)
-- **Weather Icons**: 
-  - Japanese Google Weather Icon versions: Official Google Weather icons with default Google Map icons as fallback
-  - Font Awesome versions: Font Awesome 6.5.0 from CDN
-
-## Styling & Customization
-
-### Visual Design
-- Transparent background for overlay use
-- White text with black shadow for maximum visibility
-- Professional icon systems (Japanese Google Weather or Font Awesome)
-- Responsive layout that works on any screen size
-- Enhanced weather icons with drop shadows for better visibility
-
-### Icons Used
-- 🕒 Clock icon for time display
-- 📍 Location dot for place information  
-- 🎌 **Japanese Google Weather icons**: Dynamic Google Weather Icons that change based on conditions, time of day, and weather parameters
-- 🎨 **Font Awesome**: Standard Font Awesome weather icons (fa-sun, fa-cloud, fa-snowflake, etc.) with day/night variations
-
-## Browser Compatibility
-
-### Supported Browsers
-- Chrome/Chromium (recommended)
-- Firefox
-- Safari
-- Edge
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-### Required Permissions
-- **GPS Versions**: Location access required
-- **IP Versions**: No permissions needed
-- **All**: Internet connection required
-
-## Troubleshooting
-
-### Location Not Loading (IP Versions)
-1. **Check internet connection**: Ensure network connectivity
-2. **Try different browser**: Some corporate networks block location services
-3. **Clear browser cache**: Refresh the page completely
-
-### Location Not Loading (GPS Versions)  
-1. **Check browser permissions**: Ensure location access is granted
-2. **HTTPS required**: Modern browsers require HTTPS for GPS access
-3. **Try IP version**: Use IP-only versions as fallback
-4. **Indoor GPS issues**: GPS accuracy decreases indoors
-
-### Weather Not Displaying
-1. **Internet connectivity**: Verify network access
-2. **Temporary service issue**: Weather API might be temporarily unavailable
-3. **Refresh page**: Try reloading the overlay
-4. **Icon fallback**: Japanese Google Weather icons automatically fall back to Google Maps icons if needed
-
-### PRISM Live Issues
-1. **Use IP version**: Make sure you're using IP-only versions
-2. **Check overlay settings**: Ensure web overlay is properly configured
-3. **Browser permissions**: Some versions require location permissions
-
-## Recent Updates
-
-### Font Awesome Icon Versions
-- **Alternative Icon Style** - Added Font Awesome weather icon versions for users who prefer this style
-- **Complete Feature Parity** - Font Awesome versions include all advanced features (heat waves, wind detection, regional thresholds)
-- **Four Total Versions** - Now offering Japanese Google Weather icons and Font Awesome icon styles in both IP-only and GPS+IP variants
-- **Day/Night Icon Support** - Font Awesome versions include proper day/night icon variations
-- **Preserved Animations** - Heat wave and wind effect animations maintained in Font Awesome versions
-
-### Major Weather System Features
-- **Universal Japanese Google Weather Icons** - Beautiful Google Weather Icons as primary option
-- **Enhanced Weather Detection** - Multi-parameter analysis using wind speed, precipitation, visibility, and temperature
-- **Complete Weather Coverage** - Support for all weather conditions including extreme weather, mixed precipitation, and severe storms
-- **Smart Condition Logic** - Advanced weather condition detection beyond basic weather codes
-- **Reliable Fallback System** - Automatic fallback to Google Maps icons ensures 100% reliability
-- **Improved Performance** - Better error handling and reduced console noise
-
-### New Weather Conditions Supported
-- Wind-based conditions (windy, wind with rain)
-- Enhanced snow detection (blizzards, snowstorms, heavy snow storms)
-- Advanced rain detection (light/moderate/heavy distinctions)
-- Severe weather variations (thunderstorm intensities, hail detection)
-- Extreme temperature conditions (very hot, very cold)
-- Mixed precipitation (rain and snow combinations)
-- Visibility-based conditions (blowing snow, enhanced fog detection)
-
-## Performance Tips
-
-### For Streaming
-- Use IP versions for better stability during streams
-- Position overlay in a corner to avoid content interference
-- Test before going live to ensure proper functionality
-- Weather icons now load more reliably with improved fallback system (Japanese Google Weather icons) or reliable CDN (Font Awesome)
-
-### For Mobile IRL Streaming
-- GPS versions work best with IRL Pro
-- IP versions recommended for other mobile streaming apps
-- Consider battery impact of GPS usage
-- All users can choose between Japanese Google Weather or Font Awesome icons
-
-## Version History & Updates
-
-The overlays are automatically updated on the GitHub Pages hosting, so you'll always get the latest version by using the URLs above. Recent major updates include the universal Japanese Google Weather Icon system, comprehensive multi-parameter weather detection, and Font Awesome icon alternatives.
-
-## License
-
-This project is open source. Feel free to modify and distribute as needed.
-
-## Contributing
-
-Feel free to submit issues, feature requests, or pull requests to improve the overlay.
-
----
-
-**Quick Reference:**
-- **Maximum Compatibility (Japanese Google Weather Icons)**: `https://mrchallah.github.io/iploc`
-- **Maximum Compatibility (Font Awesome)**: `https://mrchallah.github.io/classiciploc`
-- **Maximum Accuracy (Japanese Google Weather Icons)**: `https://mrchallah.github.io/`
-- **Maximum Accuracy (Font Awesome)**: `https://mrchallah.github.io/classic`
-- **PRISM Live**: Use IP versions
-- **IRL Pro**: Use GPS versions
-- **OBS/XSplit**: Use IP versions  
-- **Weather Icons**: Choose between Japanese Google Weather icons or Font Awesome icons
-- **Weather Coverage**: Complete multi-parameter weather detection system 
+<!DOCTYPE html><html><head><meta charset="utf-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+  body {
+    background: transparent !important;
+  }
+  .text-shadow {
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  .info-icon {
+    width: 30px;
+    text-align: center;
+  }
+  
+  .weather-icon {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .weather-icon-main {
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  
+  .heat-waves {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    animation: heatWave 2s ease-in-out infinite;
+  }
+  
+  .heat-waves.with-wind {
+    left: 1%;
+  }
+  
+  @keyframes heatWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.7; }
+    50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+  }
+  
+  .wind-waves {
+    position: absolute;
+    top: 25px;
+    left: 97%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    animation: windWave 1.5s ease-in-out infinite;
+  }
+  
+  .wind-waves.only-wind {
+    left: 50%;
+  }
+  
+  @keyframes windWave {
+    0%, 100% { transform: translateX(-50%) translateY(0px); opacity: 0.8; }
+    50% { transform: translateX(-50%) translateY(-2px); opacity: 1; }
+  }
+  
+  .icon-text-shadow {
+    color: white;
+    font-size: 1.3em;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 4px #000, 0 0 1px #000, 0 0 12px #000;
+  }
+  
+  .weather-row {
+    margin-top: -4.25px;
+  }
+  </style></head><body class="text-white">
+  
+  <div id="info" class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1 p-3 rounded">
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap"><i class="fa-regular fa-clock info-icon icon-text-shadow me-2"></i><span id="time">--:--:--</span></div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap">
+      <i class="fa-solid fa-location-dot info-icon icon-text-shadow me-2"></i>
+      <span id="place">Waiting for GPS…</span>
+    </div>
+    <div class="d-flex align-items-center fs-5 fw-bold text-shadow text-nowrap weather-row">
+      <span class="info-icon me-2">
+        <span id="weather-icon" class="weather-icon">
+          <i id="weather-icon-main" class="fa-solid fa-cloud weather-icon-main"></i>
+          <i id="heat-waves" class="fa-solid fa-water heat-waves" style="display: none;"></i>
+          <i id="wind-waves" class="fa-solid fa-wind wind-waves" style="display: none;"></i>
+        </span>
+      </span>
+      <span id="weather">--°C</span>
+    </div>
+  </div>
+
+  <script>
+  const placeEl = document.getElementById('place');
+  const weatherEl = document.getElementById('weather');
+  const GOOGLE_GEO_KEY = 'YOUR_KEY';
+  
+  let lastKnownGPSLocation = null;
+  let gpsSuccessful = false;
+  let gpsAttempted = false;
+  let consecutiveGPSFailures = 0;
+  let lastWeatherData = null; // Cache last successful weather
+  let lastWeatherTimestamp = 0; // Track when weather was last fetched
+  
+  // Detect if we're on mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  function tick(){
+    const now = new Date();
+    const dateString = now.toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    
+    document.getElementById('time').textContent = `${dateString}, ${timeString}`;
+  }
+  tick(); setInterval(tick, 1000);
+  
+  async function reverseGeocode(lat, lon){
+    // Detect if we're running locally (file:// protocol) and prioritize Nominatim
+    const isLocalFile = window.location.protocol === 'file:';
+    
+    if (isLocalFile) {
+      console.log('Local file detected, using Nominatim as primary geocoder');
+      return await reverseGeocodeWithNominatim(lat, lon);
+    }
+    
+    // Try Google first for hosted environments
+    try {
+      return await reverseGeocodeWithGoogle(lat, lon);
+    } catch (error) {
+      console.warn('Google geocoding failed, falling back to Nominatim:', error.message);
+      return await reverseGeocodeWithNominatim(lat, lon);
+    }
+  }
+  
+  async function reverseGeocodeWithGoogle(lat, lon) {
+    // Use Google's reverse geocoding API for better English translations
+    // Add more result types to get better city resolution for imprecise locations
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_GEO_KEY}&language=en&result_type=locality|administrative_area_level_2|administrative_area_level_1|country`);
+    const data = await res.json();
+    
+    // Check for API quota/permission issues first
+    if (data.status === 'REQUEST_DENIED' || data.status === 'OVER_QUERY_LIMIT') {
+      console.warn('Google Geocoding API access issue:', data.status, data.error_message);
+      throw new Error(`Google API ${data.status}: ${data.error_message || 'Access denied or quota exceeded'}`);
+    }
+    
+    if (data.status === 'OK' && data.results.length > 0) {
+      // Collect all components from all results to make a consistent decision
+      let allCities = [];
+      let allStates = [];
+      let country = '';
+      let isJapan = false;
+      
+      // Process all results to gather comprehensive location data
+      for (let resultIndex = 0; resultIndex < Math.min(data.results.length, 3); resultIndex++) {
+        const result = data.results[resultIndex];
+        const components = result.address_components;
+        
+        components.forEach(component => {
+          const types = component.types;
+          const name = component.long_name;
+          
+          // Check if location is in Japan
+          if (types.includes('country') && (component.short_name === 'JP' || name === 'Japan')) {
+            isJapan = true;
+          }
+          
+          // Collect potential city names
+          if (types.includes('locality')) {
+            allCities.push({ name, priority: 1, type: 'locality', source: `result_${resultIndex}` });
+          } else if (types.includes('administrative_area_level_2')) {
+            allCities.push({ name, priority: 2, type: 'admin_level_2', source: `result_${resultIndex}` });
+          } else if (types.includes('sublocality_level_1')) {
+            allCities.push({ name, priority: 3, type: 'sublocality', source: `result_${resultIndex}` });
+          }
+          
+          // Collect state/region names
+          if (types.includes('administrative_area_level_1')) {
+            allStates.push({ name, source: `result_${resultIndex}` });
+          }
+          
+          // Set country (take first one found)
+          if (types.includes('country') && !country) {
+            country = name;
+          }
+        });
+      }
+      
+      console.log('All collected cities:', allCities);
+      console.log('All collected states:', allStates);
+      
+      // Store Japan status globally for weather icon selection
+      window.isLocationInJapan = isJapan;
+      
+      // Deduplicate and prioritize cities
+      const uniqueCities = [];
+      allCities.forEach(cityObj => {
+        const isDuplicate = uniqueCities.some(existing => 
+          existing.name.toLowerCase() === cityObj.name.toLowerCase()
+        );
+        if (!isDuplicate) {
+          uniqueCities.push(cityObj);
+        }
+      });
+      
+      // Filter out overly detailed districts
+      const filteredCities = uniqueCities.filter(cityObj => {
+        const name = cityObj.name;
+        const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || 
+                                 name.includes('(') || name.includes(')') ||
+                                 name.includes('Ward') || name.includes('District');
+        return !isDetailedDistrict;
+      });
+      
+      // Sort by priority and select best city
+      const citiesToConsider = filteredCities.length > 0 ? filteredCities : uniqueCities;
+      citiesToConsider.sort((a, b) => a.priority - b.priority);
+      
+      // Get the best state (most common one)
+      const stateNames = allStates.map(s => s.name);
+      const mostCommonState = stateNames.length > 0 ? stateNames[0] : '';
+      
+      // Select final city and state with consistent redundancy rules
+      let finalCity = '';
+      let finalState = '';
+      
+      if (citiesToConsider.length > 0) {
+        const bestCityObj = citiesToConsider[0];
+        finalCity = bestCityObj.name;
+        
+        // Apply consistent state inclusion rules
+        if (mostCommonState) {
+          // Always exclude state if it's exactly the same as city (case insensitive)
+          if (finalCity.toLowerCase() === mostCommonState.toLowerCase()) {
+            finalState = '';
+            console.log('Excluding state because it matches city exactly:', finalCity, '==', mostCommonState);
+          }
+          // For Israel specifically, always exclude "Central District", "Northern District", etc. 
+          // when we have a proper city name, as these are administrative regions
+          else if (country === 'Israel' && mostCommonState.toLowerCase().includes('district')) {
+            finalState = '';
+            console.log('Excluding Israeli district for consistency:', mostCommonState);
+          }
+          // For other locations, include state if it adds meaningful information
+          else {
+            // Check if state is a generic administrative name that doesn't add value
+            const genericStateTerms = ['region', 'province', 'territory', 'district', 'area'];
+            const isGenericState = genericStateTerms.some(term => 
+              mostCommonState.toLowerCase().includes(term)
+            );
+            
+            // Only include state if it's not generic or if the city is very small/unknown
+            if (!isGenericState || bestCityObj.priority > 2) {
+              finalState = mostCommonState;
+              console.log('Including state:', mostCommonState);
+            } else {
+              finalState = '';
+              console.log('Excluding generic state for consistency:', mostCommonState);
+            }
+          }
+        }
+        
+        console.log('Selected city:', finalCity, 'from type:', bestCityObj.type);
+      }
+      
+      // If still no city, try administrative areas as backup
+      if (!finalCity && mostCommonState) {
+        finalCity = mostCommonState;
+        finalState = '';
+        console.log('Using state as city (backup):', finalCity);
+      }
+      
+      // Build final address string
+      const parts = [finalCity, finalState, country].filter(Boolean);
+      
+      console.log('Google final location parts (consistent):', parts);
+      return parts.join(", ");
+    }
+    
+    // Safer fallback - extract only city, state, country from formatted address
+    if (data.results && data.results.length > 0) {
+      const formattedAddr = data.results[0].formatted_address;
+      const addressParts = formattedAddr.split(', ');
+      
+      // Try to extract only the broader location components (last 2-3 parts typically)
+      // Skip detailed addresses like street numbers, building names, etc.
+      const broadParts = addressParts.slice(-3).filter(part => {
+        // Filter out postal codes, detailed street addresses
+        return !part.match(/^\d+/) && // No leading numbers
+               !part.includes('#') && // No building numbers
+               !part.includes('Suite') && // No suite numbers
+               !part.includes('Floor') && // No floor numbers
+               part.length > 2; // Reasonable length
+      });
+      
+      // Additional redundancy check for formatted address parts
+      const filteredParts = [];
+      broadParts.forEach((part, index) => {
+        const isRedundant = filteredParts.some(existingPart => {
+          const p1 = part.toLowerCase();
+          const p2 = existingPart.toLowerCase();
+          return p1.includes(p2) || p2.includes(p1) || 
+                 p1.replace(/\s+(region|province|state|prefecture|district)$/, '') === p2 ||
+                 p2.replace(/\s+(region|province|state|prefecture|district)$/, '') === p1;
+        });
+        
+        // Filter out Israeli districts specifically
+        const isIsraeliDistrict = part.toLowerCase().includes('district') && 
+                                broadParts.some(p => p.toLowerCase() === 'israel');
+        
+        if (!isRedundant && !isIsraeliDistrict) {
+          filteredParts.push(part);
+        }
+      });
+      
+      return filteredParts.join(", ");
+    }
+    
+    throw new Error(`Google Geocoding returned status: ${data.status}`);
+  }
+  
+  async function reverseGeocodeWithNominatim(lat, lon) {
+    // Fallback to Nominatim with additional language parameters
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en&addressdetails=1&extratags=1`);
+    const geo = await res.json();
+    const addr = geo.address;
+    
+    console.log('Nominatim address components:', addr);
+    
+    // Check if Japan in Nominatim response
+    window.isLocationInJapan = addr.country_code === 'jp' || addr.country === 'Japan' || addr.country === '日本';
+    
+    // Enhanced Nominatim city name selection with priority-based approach
+    let city = '';
+    let state = '';
+    let country = addr.country || '';
+    
+    // Collect all potential city names from Nominatim with priorities
+    let potentialCities = [];
+    
+    // Priority 1: Primary city designations
+    if (addr.city && !addr.city.includes('Capital') && !addr.city.includes('City of')) {
+      potentialCities.push({ name: addr.city, priority: 1, type: 'city' });
+    }
+    if (addr.town && !addr.town.includes('Capital') && !addr.town.includes('City of')) {
+      potentialCities.push({ name: addr.town, priority: 1, type: 'town' });
+    }
+    if (addr.village && !addr.village.includes('Capital') && !addr.village.includes('City of')) {
+      potentialCities.push({ name: addr.village, priority: 1, type: 'village' });
+    }
+    
+    // Priority 1.5: Small settlements, hamlets, and localities (important for Israeli communities)
+    if (addr.hamlet) {
+      potentialCities.push({ name: addr.hamlet, priority: 1.5, type: 'hamlet' });
+    }
+    if (addr.locality && addr.locality !== addr.city && addr.locality !== addr.town) {
+      potentialCities.push({ name: addr.locality, priority: 1.5, type: 'locality' });
+    }
+    if (addr.quarter && addr.quarter !== addr.city && addr.quarter !== addr.town) {
+      potentialCities.push({ name: addr.quarter, priority: 1.5, type: 'quarter' });
+    }
+    if (addr.residential && addr.residential !== addr.city && addr.residential !== addr.town) {
+      potentialCities.push({ name: addr.residential, priority: 1.5, type: 'residential' });
+    }
+    
+    // Priority 2: Administrative areas that often contain city names
+    if (addr.municipality && addr.municipality !== addr.city && addr.municipality !== addr.town) {
+      potentialCities.push({ name: addr.municipality, priority: 2, type: 'municipality' });
+    }
+    if (addr.county && addr.county !== addr.city && addr.county !== addr.town && !addr.county.includes('County')) {
+      potentialCities.push({ name: addr.county, priority: 2, type: 'county' });
+    }
+    
+    // Priority 3: Suburban/district areas
+    if (addr.suburb && addr.suburb !== addr.city && addr.suburb !== addr.town) {
+      potentialCities.push({ name: addr.suburb, priority: 3, type: 'suburb' });
+    }
+    if (addr.neighbourhood && addr.neighbourhood !== addr.city && addr.neighbourhood !== addr.town) {
+      potentialCities.push({ name: addr.neighbourhood, priority: 3, type: 'neighbourhood' });
+    }
+    
+    // Priority 4: State/region as last resort
+    if (addr.state && addr.state !== addr.city && addr.state !== addr.town) {
+      potentialCities.push({ name: addr.state, priority: 4, type: 'state_as_city' });
+    }
+    
+    console.log('Nominatim potential cities:', potentialCities);
+    
+    // Filter out overly detailed districts and administrative names
+    const filteredCities = potentialCities.filter(cityObj => {
+      const name = cityObj.name;
+      const isDetailedDistrict = name.includes('-dong') || name.includes('dong,') || 
+                               name.includes('(') || name.includes(')') ||
+                               name.includes('Ward') || name.includes('District') ||
+                               name.includes('Capital') || name.includes('City of') ||
+                               name.includes('County') || name.includes('Region');
+      return !isDetailedDistrict;
+    });
+    
+    // Choose the best city name
+    if (filteredCities.length > 0) {
+      // Sort by priority (lower number = higher priority)
+      filteredCities.sort((a, b) => a.priority - b.priority);
+      const bestCity = filteredCities[0];
+      city = bestCity.name;
+      console.log('Selected Nominatim city:', city, 'from type:', bestCity.type);
+      
+      // Don't use state as city if we found a real city
+      if (bestCity.type === 'state_as_city') {
+        state = ''; // Don't duplicate state
+      } else {
+        // Set state normally if we found a real city
+        if (addr.state && addr.state !== city && !addr.state.includes('Capital') && !addr.state.includes('City of')) {
+          state = addr.state;
+        }
+      }
+    } else if (potentialCities.length > 0) {
+      // Use unfiltered if filtered list is empty
+      potentialCities.sort((a, b) => a.priority - b.priority);
+      const bestCity = potentialCities[0];
+      city = bestCity.name.replace(/^Capital City of /, '');
+      console.log('Selected Nominatim city (unfiltered):', city, 'from type:', bestCity.type);
+      
+      if (bestCity.type === 'state_as_city') {
+        state = '';
+      } else if (addr.state && addr.state !== city) {
+        state = addr.state;
+      }
+    }
+    
+    // Enhanced redundancy removal for Nominatim
+    if (city && state) {
+      const cityLower = city.toLowerCase();
+      const stateLower = state.toLowerCase();
+      
+      const isRedundant = cityLower === stateLower ||
+                         cityLower.includes(stateLower) || 
+                         stateLower.includes(cityLower) ||
+                         cityLower === stateLower.replace(/\s+(region|province|state|prefecture|district|county)$/, '') ||
+                         stateLower === cityLower.replace(/\s+(region|province|state|prefecture|district|county)$/, '');
+      
+      if (isRedundant) {
+        console.log('Detected Nominatim redundancy between city and state:', city, '/', state);
+        // Prefer the shorter, more specific name
+        if (city.length <= state.length) {
+          state = ''; // Keep city, remove state
+        } else {
+          city = state; // Use state as city
+          state = '';
+        }
+      }
+    }
+    
+    // Filter out Israeli districts before assembling final location
+    if (country === 'Israel' && state && state.toLowerCase().includes('district')) {
+      state = '';
+    }
+    
+    const parts = [city, state, country].filter(Boolean);
+    console.log('Nominatim final parts:', parts);
+    return parts.join(", ");
+  }
+  
+  // Weather condition mapping for Open-Meteo weather codes
+  const weatherCodes = {
+    0: 'Clear', 1: 'Mostly Clear', 2: 'Few Clouds', 3: 'Cloudy',
+    45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle', 
+    55: 'Dense Drizzle', 56: 'Light Freezing Drizzle', 57: 'Dense Freezing Drizzle',
+    61: 'Light Rain', 63: 'Moderate Rain', 65: 'Heavy Rain', 66: 'Light Freezing Rain', 
+    67: 'Heavy Freezing Rain', 71: 'Light Snow', 73: 'Moderate Snow', 75: 'Heavy Snow',
+    77: 'Snow Grains', 80: 'Light Rain', 81: 'Moderate Rain', 
+    82: 'Heavy Rain', 85: 'Light Snow', 86: 'Snow Showers',
+    95: 'Thunderstorm', 96: 'Thunderstorm with Light Hail', 99: 'Thunderstorm with Heavy Hail'
+  };
+  
+  // Function to get weather icon based on weather code and time
+  function getWeatherIcon(weatherCode, isDay = true, temperature = 20) {
+    const iconMap = {
+      // Clear/Sunny - use sun for day, moon for night
+      0: isDay ? (temperature > 17 ? 'fa-sun' : 'fa-sun') : 'fa-moon',           // Clear
+      1: isDay ? 'fa-sun' : 'fa-moon',           // Mainly Clear
+      
+      // Cloudy
+      2: isDay ? 'fa-cloud-sun' : 'fa-cloud-moon',     // Few Clouds
+      3: 'fa-cloud',         // Cloudy
+      
+      // Fog
+      45: 'fa-eye-slash',    // Fog
+      48: 'fa-eye-slash',    // Depositing Rime Fog
+      
+      // Drizzle
+      51: 'fa-cloud-rain',   // Light Drizzle
+      53: 'fa-cloud-rain',   // Moderate Drizzle
+      55: 'fa-cloud-rain',   // Dense Drizzle
+      56: 'fa-cloud-rain',   // Light Freezing Drizzle
+      57: 'fa-cloud-rain',   // Dense Freezing Drizzle
+      
+      // Rain
+      61: 'fa-cloud-rain',   // Light Rain
+      63: 'fa-cloud-rain',   // Moderate Rain
+      65: 'fa-cloud-showers-heavy',   // Heavy Rain
+      66: 'fa-cloud-rain',   // Light Freezing Rain
+      67: 'fa-cloud-showers-heavy',   // Heavy Freezing Rain
+      
+      // Snow
+      71: 'fa-snowflake',    // Light Snow
+      73: 'fa-snowflake',    // Moderate Snow
+      75: 'fa-snowflake',    // Heavy Snow
+      77: 'fa-snowflake',    // Snow Grains
+      
+      // Showers
+      80: 'fa-cloud-rain',   // Light Rain
+      81: 'fa-cloud-rain',   // Moderate Rain
+      82: 'fa-cloud-showers-heavy',   // Heavy Rain
+      85: 'fa-snowflake',    // Light Snow
+      86: 'fa-snowflake',    // Heavy Snow 
+      
+      // Thunderstorm
+      95: 'fa-cloud-bolt',         // Thunderstorm
+      96: 'fa-cloud-bolt',         // Thunderstorm with Slight Hail
+      99: 'fa-cloud-bolt'          // Thunderstorm with Heavy Hail
+    };
+    
+    return iconMap[weatherCode] || 'fa-cloud';
+  }
+  
+  // Enhanced heat wave detection based on regional climate context
+  function determineHeatWaveThreshold(lat) {
+    // Regional temperature thresholds based on latitude and typical climate zones
+    const tempThresholds = {
+      // Arctic/Subarctic (above 60°N)
+      arctic: { threshold: 20, region: 'Arctic' },
+      // Northern temperate (45-60°N)  
+      northTemperate: { threshold: 28, region: 'Northern Temperate' },
+      // Mid temperate (30-45°N)
+      midTemperate: { threshold: 32, region: 'Mid Temperate' },
+      // Subtropical (15-30°N)
+      subtropical: { threshold: 35, region: 'Subtropical' },
+      // Tropical (0-15°N)
+      tropical: { threshold: 38, region: 'Tropical' },
+      // Southern hemisphere equivalents
+      southTropical: { threshold: 38, region: 'South Tropical' },
+      southSubtropical: { threshold: 35, region: 'South Subtropical' },
+      southTemperate: { threshold: 32, region: 'South Temperate' }
+    };
+    
+    const absLat = Math.abs(lat);
+    
+    if (absLat >= 60) return tempThresholds.arctic;
+    if (absLat >= 45) return lat > 0 ? tempThresholds.northTemperate : tempThresholds.southTemperate;
+    if (absLat >= 30) return tempThresholds.midTemperate;
+    if (absLat >= 15) return lat > 0 ? tempThresholds.subtropical : tempThresholds.southSubtropical;
+    return lat > 0 ? tempThresholds.tropical : tempThresholds.southTropical;
+  }
+  
+  async function fetchWeather(lat, lon){
+    try {
+      // Enhanced API call with additional parameters for better condition detection
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day,wind_speed_10m,precipitation,visibility&timezone=auto`);
+      const j = await r.json();
+      const c = Math.round(j.current.temperature_2m);
+      const f = Math.round(c * 9 / 5 + 32);
+      const isDay = j.current.is_day === 1;
+      
+      // Enhanced weather condition detection
+      const windSpeed = j.current.wind_speed_10m || 0;
+      const precipitation = j.current.precipitation || 0;
+      const visibility = j.current.visibility || 10000;
+      
+      // Wind conditions
+      let isWindy = windSpeed > 18;
+      let isVeryWindy = windSpeed > 35;
+      
+      let desc = weatherCodes[j.current.weather_code] || 'Unknown';
+      
+      // Change "Clear" to "Sunny" if temperature is above 17°C and it's daytime
+      if (j.current.weather_code === 0 && c > 17 && isDay) {
+        desc = 'Sunny';
+      }
+      
+      // Get regional heat wave threshold
+      const heatThreshold = determineHeatWaveThreshold(lat);
+      console.log(`Heat wave threshold for region (${heatThreshold.region}): ${heatThreshold.threshold}°C`);
+      
+      // Check for heat wave conditions
+      const isHot = c >= heatThreshold.threshold;
+      
+      // Add wind description to weather text if windy
+      if (isVeryWindy) {
+        desc += ', Very Windy';
+      } else if (isWindy) {
+        desc += ', Windy';
+      }
+      
+      // Add heat wave description if applicable
+      if (isHot) {
+        desc += ', Heat Wave';
+      }
+      
+      // Cache successful weather data
+      lastWeatherData = {
+        temperature: c,
+        fahrenheit: f,
+        description: desc,
+        weatherCode: j.current.weather_code,
+        isDay: isDay,
+        isHot: isHot,
+        isWindy: isWindy,
+        lat: lat,
+        lon: lon
+      };
+      lastWeatherTimestamp = Date.now();
+      
+      weatherEl.textContent = `${c}°C | ${f}°F, ${desc}`;
+      
+      // Update weather icon
+      const weatherIconMain = document.getElementById('weather-icon-main');
+      const heatWaves = document.getElementById('heat-waves');
+      const windWaves = document.getElementById('wind-waves');
+      const iconClass = getWeatherIcon(j.current.weather_code, isDay, c);
+      
+      // Remove all existing weather icon classes
+      weatherIconMain.className = 'weather-icon-main';
+      weatherIconMain.classList.add('fa-solid', iconClass);
+      
+      // Show heat waves based on regional threshold
+      if (heatWaves) {
+        if (isHot) {
+          heatWaves.style.display = 'inline-block';
+          // Position based on whether wind is also showing
+          if (isWindy) {
+            heatWaves.classList.add('with-wind');
+          } else {
+            heatWaves.classList.remove('with-wind');
+          }
+        } else {
+          heatWaves.style.display = 'none';
+          heatWaves.classList.remove('with-wind');
+        }
+      }
+      
+      // Show wind waves if windy conditions
+      if (windWaves) {
+        if (isWindy) {
+          windWaves.style.display = 'inline-block';
+          
+          // Position wind waves - if no heat, center it; if heat, keep it to the right
+          if (isHot) {
+            windWaves.classList.remove('only-wind');
+            // Update heat waves to show they're with wind
+            if (heatWaves) {
+              heatWaves.classList.add('with-wind');
+            }
+          } else {
+            windWaves.classList.add('only-wind');
+          }
+        } else {
+          windWaves.style.display = 'none';
+          windWaves.classList.remove('only-wind');
+          
+          // Remove wind class from heat waves
+          if (heatWaves) {
+            heatWaves.classList.remove('with-wind');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Weather fetch failed:', error);
+      
+      // Use cached weather data if it's recent (within 10 minutes) instead of showing "Weather N/A"
+      if (lastWeatherData && (Date.now() - lastWeatherTimestamp) < 600000) {
+        console.log('Using cached weather data due to fetch failure');
+        const cached = lastWeatherData;
+        weatherEl.textContent = `${cached.temperature}°C | ${cached.fahrenheit}°F, ${cached.description}`;
+        
+        // Update icons with cached data
+        const weatherIconMain = document.getElementById('weather-icon-main');
+        const iconClass = getWeatherIcon(cached.weatherCode, cached.isDay, cached.temperature);
+        weatherIconMain.className = 'weather-icon-main';
+        weatherIconMain.classList.add('fa-solid', iconClass);
+        
+        // Update secondary effects with cached data
+        const heatWaves = document.getElementById('heat-waves');
+        const windWaves = document.getElementById('wind-waves');
+        
+        if (heatWaves) {
+          heatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
+          if (cached.isHot && cached.isWindy) {
+            heatWaves.classList.add('with-wind');
+          } else {
+            heatWaves.classList.remove('with-wind');
+          }
+        }
+        
+        if (windWaves) {
+          windWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
+          if (cached.isWindy) {
+            if (cached.isHot) {
+              windWaves.classList.remove('only-wind');
+            } else {
+              windWaves.classList.add('only-wind');
+            }
+          } else {
+            windWaves.classList.remove('only-wind');
+          }
+        }
+      } else {
+        // Only show "Weather N/A" if no recent cached data is available
+        weatherEl.textContent = "Weather N/A";
+      }
+    }
+  }
+  
+  // Method 1: Try IRL Pro location data
+  function getIRLProLocation() {
+    if (window.locationData && window.locationData.latitude && window.locationData.longitude) {
+      return {
+        lat: window.locationData.latitude,
+        lon: window.locationData.longitude,
+        source: "IRL Pro GPS"
+      };
+    }
+    return null;
+  }
+  
+  // Method 2: Try browser GPS
+  function getBrowserGPS(showLoadingMessages = true) {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+  
+      if (showLoadingMessages) {
+        placeEl.textContent = "Grabbing GPS Location...";
+      }
+      
+      const options = {
+        enableHighAccuracy: true,
+        timeout: isIOS ? 60000 : (isMobile ? 45000 : 15000),
+        maximumAge: gpsSuccessful ? 30000 : 0
+      };
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          gpsSuccessful = true;
+          consecutiveGPSFailures = 0;
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracy: Math.round(position.coords.accuracy),
+            source: `GPS (±${Math.round(position.coords.accuracy)}m)`
+          });
+        },
+        (error) => {
+          consecutiveGPSFailures++;
+          reject(error);
+        },
+        options
+      );
+    });
+  }
+  
+  async function updateLocationAndWeather(showLoadingMessages = true){
+    try {
+      let locationData = null;
+      
+      // Try Method 1: IRL Pro location data
+      locationData = getIRLProLocation();
+      
+      // Try Method 2: Browser GPS - Allow retries even after previous failures
+      if (!locationData) {
+        try {
+          locationData = await getBrowserGPS(showLoadingMessages);
+          gpsAttempted = true;
+        } catch (gpsError) {
+          console.warn('GPS failed:', gpsError);
+          gpsAttempted = true;
+        }
+      }
+      
+      // Use last known GPS location as fallback (expanded conditions)
+      if (!locationData && lastKnownGPSLocation) {
+        const now = Date.now();
+        const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
+        
+        // Use cached GPS location if it's recent (within 10 minutes)
+        if (locationAge < 600000) { // 10 minutes
+          locationData = lastKnownGPSLocation;
+          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes)');
+        }
+      }
+      
+      // Update the display
+      if (locationData) {
+        // Only save GPS locations to cache (not IRL Pro data)
+        if (locationData.source.includes('GPS')) {
+          lastKnownGPSLocation = locationData;
+          lastKnownGPSLocation.timestamp = Date.now();
+        }
+        
+        if (showLoadingMessages) {
+          placeEl.textContent = "Loading location...";
+        }
+        const label = await reverseGeocode(locationData.lat, locationData.lon);
+        placeEl.textContent = label;
+        fetchWeather(locationData.lat, locationData.lon);
+        console.log('Location updated:', locationData.source, label);
+      } else {
+        // During silent refreshes, don't immediately show "GPS N/A" - keep existing display
+        if (showLoadingMessages) {
+          // Only show "GPS N/A" during initial load or user-initiated refresh
+          console.error('No GPS data available from any source');
+          placeEl.textContent = "GPS N/A";
+          
+          // Don't immediately clear weather - let the weather fetch handle caching
+          if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
+            weatherEl.textContent = "Weather N/A";
+          }
+        } else {
+          // During silent refresh failures, just log the issue but keep existing display
+          console.log('Silent location refresh failed, keeping existing display');
+        }
+      }
+      
+    } catch (e) {
+      console.error('Location update failed:', e);
+      // Only show error during initial load or user-initiated refresh
+      if (showLoadingMessages) {
+        placeEl.textContent = "GPS N/A";
+        // Don't immediately clear weather - let cached data persist
+        if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
+          weatherEl.textContent = "Weather N/A";
+        }
+      }
+    }
+  }
+  
+  // Auto-refresh every 55 seconds (without loading messages)
+  setInterval(() => updateLocationAndWeather(false), 55000);
+  
+  // Start immediately (with loading messages)
+  updateLocationAndWeather(true);
+  </script>
+  </body></html> 
