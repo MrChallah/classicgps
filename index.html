@@ -666,8 +666,8 @@
     } catch (error) {
       console.error('Weather fetch failed:', error);
       
-      // Use cached weather data if it's recent (within 10 minutes) instead of showing "Weather N/A"
-      if (lastWeatherData && (Date.now() - lastWeatherTimestamp) < 600000) {
+      // Use cached weather data instead of showing "Weather N/A" (persistent like location caching)
+      if (lastWeatherData) {
         console.log('Using cached weather data due to fetch failure');
         const cached = lastWeatherData;
         weatherEl.textContent = `${cached.temperature}°C | ${cached.fahrenheit}°F, ${cached.description}`;
@@ -704,7 +704,7 @@
           }
         }
       } else {
-        // Only show "Weather N/A" if no recent cached data is available
+        // Only show "Weather N/A" if no cached data is available at all
         weatherEl.textContent = "Weather N/A";
       }
     }
@@ -813,7 +813,7 @@
           placeEl.textContent = "GPS N/A";
           
           // Don't immediately clear weather - let the weather fetch handle caching
-          if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
+          if (!lastWeatherData) {
             weatherEl.textContent = "Weather N/A";
           }
         } else {
@@ -828,7 +828,7 @@
       if (showLoadingMessages) {
         placeEl.textContent = "GPS N/A";
         // Don't immediately clear weather - let cached data persist
-        if (!lastWeatherData || (Date.now() - lastWeatherTimestamp) > 600000) {
+        if (!lastWeatherData) {
           weatherEl.textContent = "Weather N/A";
         }
       }
