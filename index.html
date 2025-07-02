@@ -847,27 +847,45 @@
         }
       }
       
-      // Use last known GPS location as fallback (expanded conditions)
+      // Use last known location as final fallback (expanded conditions)
       if (!locationData && lastKnownGPSLocation) {
         const now = Date.now();
         const locationAge = now - (lastKnownGPSLocation.timestamp || 0);
         
-        // Use cached GPS location if it's recent (within 10 minutes)
-        if (locationAge < 600000) { // 10 minutes
+        // Use shorter cache time if GPS is working well (more responsive to location changes)
+        const maxCacheAge = gpsSuccessful ? 300000 : 600000; // 5 minutes if GPS works, 10 minutes otherwise
+        
+        // Use cached location if it's recent
+        if (locationAge < maxCacheAge) {
           locationData = lastKnownGPSLocation;
-          console.log('Using cached GPS location (age:', Math.round(locationAge/60000), 'minutes)');
+          console.log('Using cached location (age:', Math.round(locationAge/60000), 'minutes, GPS successful:', gpsSuccessful, ')');
+        } else {
+          console.log('Cached location expired (age:', Math.round(locationAge/60000), 'minutes, max:', Math.round(maxCacheAge/60000), 'minutes)');
         }
       }
       
       // Update the display
       if (locationData) {
-        // Only save GPS locations to cache (not IRL Pro data)
-        if (locationData.source.includes('GPS')) {
-          lastKnownGPSLocation = locationData;
-          lastKnownGPSLocation.timestamp = Date.now();
+        // Check if this is a significantly different location (more than ~1km away)
+        let isSignificantMove = false;
+        if (lastKnownGPSLocation && lastKnownGPSLocation.lat && lastKnownGPSLocation.lon) {
+          const latDiff = Math.abs(locationData.lat - lastKnownGPSLocation.lat);
+          const lonDiff = Math.abs(locationData.lon - lastKnownGPSLocation.lon);
+          const approximateDistance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff) * 111000; // Rough conversion to meters
+          
+          if (approximateDistance > 1000) { // More than 1km
+            isSignificantMove = true;
+            console.log('🚗 Significant location change detected! Distance:', Math.round(approximateDistance), 'meters');
+            
+            // Clear location name cache when we detect a significant move
+            lastLocationName = null;
+            lastLocationTimestamp = 0;
+          }
         }
         
-        if (showLoadingMessages) {
+        lastKnownGPSLocation = locationData;
+        lastKnownGPSLocation.timestamp = Date.now();
+        if (showLoadingMessages || isSignificantMove) {
           placeEl.textContent = "Loading location...";
         }
         
@@ -911,7 +929,6 @@
           console.log('Silent location refresh failed, keeping existing display');
         }
       }
-      
     } catch (e) {
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
@@ -967,6 +984,93 @@
       updateLocationAndWeather(false);
     }
   }, 15000); // Check every 15 seconds during issues
+  
+  // Function to clear all location caches and force refresh
+  function clearLocationCache() {
+    console.log('🔄 Clearing all location caches...');
+    
+    // Clear all cached location data
+    lastKnownGPSLocation = null;
+    lastLocationName = null;
+    lastLocationTimestamp = 0;
+    lastWeatherData = null;
+    lastWeatherTimestamp = 0;
+    
+    // Reset GPS state to allow fresh attempts
+    gpsSuccessful = false;
+    gpsAttempted = false;
+    consecutiveGPSFailures = 0;
+    
+    console.log('✅ All caches cleared! Forcing fresh location update...');
+    
+    // Force immediate location update with loading messages
+    placeEl.textContent = "🔄 Refreshing location...";
+    weatherEl.textContent = "Loading...";
+    
+    // Small delay to show the refreshing message
+    setTimeout(() => {
+      updateLocationAndWeather(true);
+    }, 100);
+  }
+
+  // Function to force location refresh (less aggressive than clearing cache)
+  function forceLocationRefresh() {
+    console.log('🔄 Forcing location refresh...');
+    
+    // Expire current location cache to force new lookup
+    if (lastKnownGPSLocation) {
+      lastKnownGPSLocation.timestamp = Date.now() - 700000; // Make it older than 10 minutes
+    }
+    
+    // Reset GPS state to allow fresh attempts
+    gpsAttempted = false;
+    consecutiveGPSFailures = 0;
+    
+    placeEl.textContent = "🔄 Updating location...";
+    updateLocationAndWeather(true);
+  }
+
+  // Keyboard shortcuts for manual refresh
+  document.addEventListener('keydown', function(event) {
+    // Ctrl+R or F5 = Force location refresh
+    if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
+      event.preventDefault();
+      console.log('🔄 Manual location refresh triggered by keyboard shortcut');
+      forceLocationRefresh();
+      return false;
+    }
+    
+    // Ctrl+Shift+R = Clear all caches and refresh
+    if (event.ctrlKey && event.shiftKey && event.key === 'R') {
+      event.preventDefault();
+      console.log('🔄 Manual cache clear triggered by keyboard shortcut');
+      clearLocationCache();
+      return false;
+    }
+  });
+
+  // Double-click on location text to force refresh
+  placeEl.addEventListener('dblclick', function() {
+    console.log('🔄 Manual location refresh triggered by double-click');
+    forceLocationRefresh();
+  });
+
+  // Make functions available globally
+  window.clearLocationCache = clearLocationCache;
+  window.forceLocationRefresh = forceLocationRefresh;
+  
+  // Add visual feedback that double-click is available
+  placeEl.title = "Double-click to refresh location • Ctrl+R to force refresh • Ctrl+Shift+R to clear cache";
+  placeEl.style.cursor = "pointer";
+  
+  // Add subtle hover effect to show it's interactive
+  placeEl.addEventListener('mouseenter', function() {
+    this.style.opacity = '0.8';
+  });
+  
+  placeEl.addEventListener('mouseleave', function() {
+    this.style.opacity = '1';
+  });
   
   // Start immediately (with loading messages)
   updateLocationAndWeather(true);
