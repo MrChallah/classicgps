@@ -902,7 +902,15 @@
       console.error('Location update failed:', e);
       // Only show error during initial load or user-initiated refresh
       if (showLoadingMessages) {
-        placeEl.textContent = "GPS N/A";
+        // Use cached location name if available, even during errors
+        if (lastLocationName) {
+          console.log('Using cached location name due to update failure');
+          placeEl.textContent = lastLocationName;
+        } else {
+          // Only show "GPS N/A" if no cached name is available
+          placeEl.textContent = "GPS N/A";
+        }
+        
         // Don't immediately clear weather - let cached data persist
         if (!lastWeatherData) {
           weatherEl.textContent = "Weather N/A";
