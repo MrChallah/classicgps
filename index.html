@@ -692,7 +692,7 @@
       weatherIconMain.className = 'weather-icon-main';
       weatherIconMain.classList.add('fa-solid', iconClass);
       
-      // Show heat waves based on regional threshold
+      // Show heat waves based on regional threshold (using existing declarations)
       if (heatWaves) {
         if (isHot) {
           heatWaves.style.display = 'inline-block';
@@ -708,7 +708,7 @@
         }
       }
       
-      // Show wind waves if windy conditions
+      // Show wind waves if windy conditions (using existing declarations)
       if (windWaves) {
         if (isWindy) {
           windWaves.style.display = 'inline-block';
@@ -732,6 +732,8 @@
             heatWaves.classList.remove('with-wind');
           }
         }
+      } else {
+        console.warn('Wind waves element not found - may be temporarily unavailable during reconnection');
       }
     } catch (error) {
       console.error('Weather fetch failed:', error);
@@ -748,29 +750,29 @@
         weatherIconMain.className = 'weather-icon-main';
         weatherIconMain.classList.add('fa-solid', iconClass);
         
-        // Update secondary effects with cached data
-        const heatWaves = document.getElementById('heat-waves');
-        const windWaves = document.getElementById('wind-waves');
+        // Update secondary effects with cached data - use different variable names to avoid redeclaration
+        const cachedHeatWaves = document.getElementById('heat-waves');
+        const cachedWindWaves = document.getElementById('wind-waves');
         
-        if (heatWaves) {
-          heatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
+        if (cachedHeatWaves) {
+          cachedHeatWaves.style.display = cached.isHot ? 'inline-block' : 'none';
           if (cached.isHot && cached.isWindy) {
-            heatWaves.classList.add('with-wind');
+            cachedHeatWaves.classList.add('with-wind');
           } else {
-            heatWaves.classList.remove('with-wind');
+            cachedHeatWaves.classList.remove('with-wind');
           }
         }
         
-        if (windWaves) {
-          windWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
+        if (cachedWindWaves) {
+          cachedWindWaves.style.display = cached.isWindy ? 'inline-block' : 'none';
           if (cached.isWindy) {
             if (cached.isHot) {
-              windWaves.classList.remove('only-wind');
+              cachedWindWaves.classList.remove('only-wind');
             } else {
-              windWaves.classList.add('only-wind');
+              cachedWindWaves.classList.add('only-wind');
             }
           } else {
-            windWaves.classList.remove('only-wind');
+            cachedWindWaves.classList.remove('only-wind');
           }
         }
       } else {
