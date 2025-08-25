@@ -126,8 +126,22 @@
   // Ensure time updates every second regardless of network issues
   setInterval(tick, 1000);
   
+  const LS_KEY = 'ww_last_location_v2';
+
+  async function reverseGeocodeWithOpenMeteo(lat, lon) {
+    const res = await fetchWithRetry(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en&format=json`);
+    const data = await res.json();
+    if (!data || !data.results || data.results.length === 0) {
+      throw new Error('Open-Meteo reverse geocoding returned no results');
+    }
+    const r = data.results[0];
+    const city = r.city || r.town || r.village || r.municipality || r.locality || r.name || '';
+    const state = r.admin1 || r.admin2 || '';
+    const country = r.country || '';
+    return filterLocationByWordCount(city, state, country);
+  }
+
   async function reverseGeocode(lat, lon){
-    // Detect if we're running locally (file:// protocol) and prioritize Nominatim
     const isLocalFile = window.location.protocol === 'file:';
     
     if (isLocalFile) {
@@ -135,17 +149,22 @@
       try {
         return await reverseGeocodeWithNominatim(lat, lon);
       } catch (nominatimError) {
-        console.warn('Nominatim failed, trying Google as fallback:', nominatimError);
-        return await reverseGeocodeWithGoogle(lat, lon);
+        console.warn('Nominatim failed, trying Google/Open-Meteo as fallback:', nominatimError);
+        try { return await reverseGeocodeWithGoogle(lat, lon); } catch (e2) {
+          console.warn('Google failed, falling back to Open-Meteo:', e2.message);
+          return await reverseGeocodeWithOpenMeteo(lat, lon);
+        }
       }
     }
     
-    // Try Google first for hosted environments
     try {
       return await reverseGeocodeWithGoogle(lat, lon);
     } catch (error) {
-      console.warn('Google geocoding failed, falling back to Nominatim:', error.message);
-      return await reverseGeocodeWithNominatim(lat, lon);
+      console.warn('Google geocoding failed, trying Nominatim/Open-Meteo:', error.message);
+      try { return await reverseGeocodeWithNominatim(lat, lon); } catch (e2) {
+        console.warn('Nominatim failed, falling back to Open-Meteo:', e2.message);
+        return await reverseGeocodeWithOpenMeteo(lat, lon);
+      }
     }
   }
   
@@ -1341,18 +1360,26 @@
           // Cache successful location name
           lastLocationName = label;
           lastLocationTimestamp = Date.now();
+          try {
+            localStorage.setItem(LS_KEY, JSON.stringify({ label, lat: locationData.lat, lon: locationData.lon, ts: Date.now() }));
+          } catch {}
           
           console.log('Location updated:', locationData.source, label);
         } catch (geocodeError) {
           console.error('Geocoding failed:', geocodeError);
-          
-          // Use cached location name if available
           if (lastLocationName) {
-            console.log('Using cached location name due to geocoding failure');
             placeEl.textContent = lastLocationName;
           } else {
-            // Only show "Location N/A" if no cached name is available
-            placeEl.textContent = "Location N/A";
+            try {
+              const cached = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+              if (cached && cached.label) {
+                placeEl.textContent = cached.label;
+              } else {
+                placeEl.textContent = "Location N/A";
+              }
+            } catch {
+              placeEl.textContent = "Location N/A";
+            }
           }
         }
         
